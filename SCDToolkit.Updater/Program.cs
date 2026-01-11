@@ -78,11 +78,14 @@ internal static class Program
 
             form.SetStatus("Copying files...");
 
-            CopyDirectory(sourceRoot, installDir, skipFileName: "updater.exe", progress: (done, total) =>
+            CopyDirectory(sourceRoot, installDir, progress: (done, total) =>
             {
                 form.SetProgress(done, total);
                 Application.DoEvents();
             });
+
+            // If the update included a newer updater, swap it into place after we exit.
+            ScheduleSelfUpdateIfPresent(installDir);
 
             form.SetStatus("Cleaning up...");
             TryDeleteDirectory(tempDir);
@@ -139,7 +142,7 @@ internal static class Program
         }
     }
 
-    private static void CopyDirectory(string sourceDir, string destDir, string skipFileName, Action<int, int>? progress)
+    private static void CopyDirectory(string sourceDir, string destDir, Action<int, int>? progress)
     {
         var files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
         var total = files.Length;
@@ -150,11 +153,19 @@ internal static class Program
             var rel = Path.GetRelativePath(sourceDir, srcFile);
             var dstFile = Path.Combine(destDir, rel);
 
-            if (string.Equals(Path.GetFileName(dstFile), skipFileName, StringComparison.OrdinalIgnoreCase))
+            // Never overwrite the running updater in-place; write "next" artifacts instead.
+            var fileName = Path.GetFileName(dstFile);
+            if (string.Equals(fileName, "updater.exe", StringComparison.OrdinalIgnoreCase))
             {
-                done++;
-                progress?.Invoke(done, total);
-                continue;
+                dstFile = Path.Combine(Path.GetDirectoryName(dstFile)!, "updater.next.exe");
+            }
+            else if (string.Equals(fileName, "updater.deps.json", StringComparison.OrdinalIgnoreCase))
+            {
+                dstFile = Path.Combine(Path.GetDirectoryName(dstFile)!, "updater.deps.next.json");
+            }
+            else if (string.Equals(fileName, "updater.runtimeconfig.json", StringComparison.OrdinalIgnoreCase))
+            {
+                dstFile = Path.Combine(Path.GetDirectoryName(dstFile)!, "updater.runtimeconfig.next.json");
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(dstFile)!);
@@ -176,6 +187,52 @@ internal static class Program
 
             done++;
             progress?.Invoke(done, total);
+        }
+    }
+
+    private static void ScheduleSelfUpdateIfPresent(string installDir)
+    {
+        try
+        {
+            var nextExe = Path.Combine(installDir, "updater.next.exe");
+            var nextDeps = Path.Combine(installDir, "updater.deps.next.json");
+            var nextRuntime = Path.Combine(installDir, "updater.runtimeconfig.next.json");
+
+            if (!File.Exists(nextExe) && !File.Exists(nextDeps) && !File.Exists(nextRuntime))
+            {
+                return;
+            }
+
+            var pid = Environment.ProcessId;
+            var scriptPath = Path.Combine(installDir, $"apply_updater_update_{pid}.cmd");
+            File.WriteAllText(scriptPath,
+                "@echo off\r\n" +
+                "setlocal\r\n" +
+                $"set PID={pid}\r\n" +
+                ":wait\r\n" +
+                "for /f \"tokens=2 delims=,\" %%a in ('tasklist /fo csv /nh /fi \"PID eq %PID%\" 2^>nul') do (\r\n" +
+                "  if \"%%~a\"==\"%PID%\" (\r\n" +
+                "    timeout /t 1 /nobreak >nul\r\n" +
+                "    goto wait\r\n" +
+                "  )\r\n" +
+                ")\r\n" +
+                "if exist \"updater.next.exe\" (move /y \"updater.next.exe\" \"updater.exe\" >nul)\r\n" +
+                "if exist \"updater.deps.next.json\" (move /y \"updater.deps.next.json\" \"updater.deps.json\" >nul)\r\n" +
+                "if exist \"updater.runtimeconfig.next.json\" (move /y \"updater.runtimeconfig.next.json\" \"updater.runtimeconfig.json\" >nul)\r\n" +
+                "del \"%~f0\"\r\n");
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = scriptPath,
+                WorkingDirectory = installDir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+        }
+        catch
+        {
+            // best effort
         }
     }
 
