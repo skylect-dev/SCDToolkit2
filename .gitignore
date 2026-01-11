@@ -61,7 +61,6 @@ scdtoolkit_config.json
 
 
 # Repo-local docs/reference assets not required by the app
-errors/
 doc/
 
 # Scratch / one-off scripts

@@ -27,9 +27,20 @@
 
   <Target Name="CopyUpdaterExe" AfterTargets="Build;Publish">
     <PropertyGroup>
-      <_UpdaterOutput>$(MSBuildProjectDirectory)\..\SCDToolkit.Updater\bin\$(Configuration)\net10.0-windows\updater.exe</_UpdaterOutput>
+      <_DesktopOutputDir Condition="'$(PublishDir)' != ''">$(PublishDir)</_DesktopOutputDir>
+      <_DesktopOutputDir Condition="'$(PublishDir)' == ''">$(OutDir)</_DesktopOutputDir>
+
+      <_UpdaterDir Condition="'$(RuntimeIdentifier)' != ''">$(MSBuildProjectDirectory)\..\SCDToolkit.Updater\bin\$(Configuration)\net10.0-windows\$(RuntimeIdentifier)\</_UpdaterDir>
+      <_UpdaterDir Condition="'$(RuntimeIdentifier)' == ''">$(MSBuildProjectDirectory)\..\SCDToolkit.Updater\bin\$(Configuration)\net10.0-windows\</_UpdaterDir>
     </PropertyGroup>
-    <Copy SourceFiles="$(_UpdaterOutput)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('$(_UpdaterOutput)')" />
+
+    <ItemGroup>
+      <_UpdaterFiles Include="$(_UpdaterDir)updater.exe" Condition="Exists('$(_UpdaterDir)updater.exe')" />
+      <_UpdaterFiles Include="$(_UpdaterDir)updater.deps.json" Condition="Exists('$(_UpdaterDir)updater.deps.json')" />
+      <_UpdaterFiles Include="$(_UpdaterDir)updater.runtimeconfig.json" Condition="Exists('$(_UpdaterDir)updater.runtimeconfig.json')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_UpdaterFiles)" DestinationFolder="$(_DesktopOutputDir)" SkipUnchangedFiles="true" Condition="'@(_UpdaterFiles)' != ''" />
   </Target>
 
   <ItemGroup>
