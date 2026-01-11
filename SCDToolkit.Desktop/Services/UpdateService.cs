@@ -26,16 +26,23 @@ public sealed class UpdateService
             return (false, "Could not determine the current executable path.");
         }
 
-        var installDir = Path.GetDirectoryName(currentExePath);
-        if (string.IsNullOrWhiteSpace(installDir) || !Directory.Exists(installDir))
+        var appDir = Path.GetDirectoryName(currentExePath);
+        if (string.IsNullOrWhiteSpace(appDir) || !Directory.Exists(appDir))
         {
             return (false, "Could not determine the install directory.");
         }
 
+        var (installDir, relaunchExeName) = ResolveInstallRootAndRelaunchExe(appDir, currentExePath);
+
         var updaterPath = Path.Combine(installDir, "updater.exe");
         if (!File.Exists(updaterPath))
         {
-            return (false, "Updater executable not found next to the app (updater.exe).");
+            // Dev builds may still have updater next to the app.
+            updaterPath = Path.Combine(appDir, "updater.exe");
+        }
+        if (!File.Exists(updaterPath))
+        {
+            return (false, "Updater executable not found (updater.exe). It must be next to the launcher or the app.");
         }
 
         try
@@ -57,13 +64,12 @@ public sealed class UpdateService
             var zipPath = Path.Combine(Path.GetTempPath(), $"SCDToolkit2_update_{tag}_{Guid.NewGuid():N}.zip");
             await DownloadAsync(zipUrl, zipPath);
 
-            var exeName = Path.GetFileName(currentExePath);
             var pid = Environment.ProcessId;
 
             Process.Start(new ProcessStartInfo
             {
                 FileName = updaterPath,
-                Arguments = $"\"{zipPath}\" \"{installDir}\" \"{exeName}\" --pid {pid}",
+                Arguments = $"\"{zipPath}\" \"{installDir}\" \"{relaunchExeName}\" --pid {pid}",
                 UseShellExecute = false,
                 CreateNoWindow = false,
                 WorkingDirectory = installDir
@@ -75,6 +81,27 @@ public sealed class UpdateService
         {
             return (false, ex.Message);
         }
+    }
+
+    private static (string InstallRoot, string RelaunchExeName) ResolveInstallRootAndRelaunchExe(string appDir, string currentExePath)
+    {
+        // Installed layout:
+        //   <root>\SCDToolkit.exe         (launcher)
+        //   <root>\updater.exe
+        //   <root>\app\SCDToolkit.Desktop.exe  (real app)
+        // In this case, updates must be applied to <root> and we should relaunch the launcher.
+        var dirName = Path.GetFileName(Path.GetFullPath(appDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)));
+        if (string.Equals(dirName, "app", StringComparison.OrdinalIgnoreCase))
+        {
+            var parent = Directory.GetParent(appDir)?.FullName;
+            if (!string.IsNullOrWhiteSpace(parent))
+            {
+                return (parent, "SCDToolkit.exe");
+            }
+        }
+
+        // Fallback: treat the app directory as the install root.
+        return (appDir, Path.GetFileName(currentExePath));
     }
 
     private static Version? GetCurrentVersion()
