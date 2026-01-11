@@ -96,7 +96,7 @@
             <RadioButton GroupName="Method" IsChecked="{Binding IsFloatPatch}" Content="Float Patch Only (Quick)" Foreground="{StaticResource TextPrimaryBrush}" />
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="20,4,0,0" IsVisible="{Binding IsFloatPatch}">
               <TextBlock Text="Volume Multiplier:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
-              <NumericUpDown Value="{Binding VolumeMultiplier}" Minimum="0.1" Maximum="3.0" Increment="0.1" FormatString="0.0" Width="100" />
+              <NumericUpDown Value="{Binding VolumeMultiplier}" Minimum="0.1" Maximum="3.0" Increment="0.1" FormatString="0.0" Width="120" />
             </StackPanel>
           </StackPanel>
         </Border>

@@ -22,7 +22,7 @@ Desktop.ini
 _ReSharper*/
 *.DotSettings.user
 .vscode/
-
+.gitignore
 
 ########################################
 # .NET build outputs
