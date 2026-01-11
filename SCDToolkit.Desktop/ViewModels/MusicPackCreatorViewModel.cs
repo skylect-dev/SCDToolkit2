@@ -149,6 +149,9 @@ public partial class MusicPackCreatorViewModel : ObservableObject
     private string description = "";
 
     [ObservableProperty]
+    private string inGameDescription = "";
+
+    [ObservableProperty]
     private int? packNameWidth;
 
     [ObservableProperty]
@@ -188,11 +191,11 @@ public partial class MusicPackCreatorViewModel : ObservableObject
             PackNameFr = PackName;
             PackNameSp = PackName;
 
-            DescriptionEn = Description;
-            DescriptionIt = Description;
-            DescriptionGr = Description;
-            DescriptionFr = Description;
-            DescriptionSp = Description;
+            DescriptionEn = InGameDescription;
+            DescriptionIt = InGameDescription;
+            DescriptionGr = InGameDescription;
+            DescriptionFr = InGameDescription;
+            DescriptionSp = InGameDescription;
         }
 
         OnPropertyChanged(nameof(UseSingleLanguage));
@@ -489,8 +492,8 @@ public partial class MusicPackCreatorViewModel : ObservableObject
             {
                 var (slot1, slot2) = DeriveSlot1And2ZipPaths(outputPath);
 
-                var request1 = new MusicPackExportRequest(1, slot1, PackName, Author, Description, PackNameWidth, assignments, packNamesByLang, descByLang);
-                var request2 = new MusicPackExportRequest(2, slot2, PackName, Author, Description, PackNameWidth, assignments, packNamesByLang, descByLang);
+                var request1 = new MusicPackExportRequest(1, slot1, PackName, Author, Description, InGameDescription, PackNameWidth, assignments, packNamesByLang, descByLang);
+                var request2 = new MusicPackExportRequest(2, slot2, PackName, Author, Description, InGameDescription, PackNameWidth, assignments, packNamesByLang, descByLang);
 
                 await _exporter.ExportAsync(request1, prog);
                 await _exporter.ExportAsync(request2, prog);
@@ -498,7 +501,7 @@ public partial class MusicPackCreatorViewModel : ObservableObject
             }
             else
             {
-                var request = new MusicPackExportRequest(Slot, outputPath, PackName, Author, Description, PackNameWidth, assignments, packNamesByLang, descByLang);
+                var request = new MusicPackExportRequest(Slot, outputPath, PackName, Author, Description, InGameDescription, PackNameWidth, assignments, packNamesByLang, descByLang);
                 await _exporter.ExportAsync(request, prog);
                 Status = "Export complete.";
             }

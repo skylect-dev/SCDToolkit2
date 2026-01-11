@@ -18,6 +18,7 @@ public sealed record MusicPackExportRequest(
     string PackName,
     string Author,
     string Description,
+    string InGameDescription,
     int? PackNameWidth,
     IReadOnlyDictionary<string, string> TrackAssignments,
     IReadOnlyDictionary<string, string>? SysPackNamesByLanguage = null,
@@ -293,7 +294,7 @@ public sealed class MusicPackExporter
                     {
                         var desc = request.SysDescriptionsByLanguage != null && request.SysDescriptionsByLanguage.TryGetValue(lang, out var d)
                             ? d
-                            : request.Description;
+                            : request.InGameDescription;
 
                         output.Add($"  {lang}: \"{EscapeForDoubleQuotes(desc)}\"");
                         i++;
@@ -368,7 +369,7 @@ public sealed class MusicPackExporter
             version = 1,
             slot = request.Slot,
             mod_metadata = new { title = request.PackName, author = request.Author, description = request.Description },
-            game_metadata = new { name = request.PackName, description = request.Description, name_width = request.PackNameWidth },
+            game_metadata = new { name = request.PackName, description = request.InGameDescription, name_width = request.PackNameWidth },
             sys_languages = request.SysPackNamesByLanguage != null || request.SysDescriptionsByLanguage != null
                 ? new
                 {

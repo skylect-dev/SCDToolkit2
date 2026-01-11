@@ -167,7 +167,7 @@
             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PackNameWidth, Mode=TwoWay}" Watermark="(auto)" Margin="0,6,0,0" />
 
             <TextBlock Grid.Row="2" Text="Description:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,6,0,0" />
-            <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Description, Mode=TwoWay}" AcceptsReturn="True" MinHeight="60" Margin="0,6,0,0" />
+            <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding InGameDescription, Mode=TwoWay}" AcceptsReturn="True" MinHeight="60" Margin="0,6,0,0" />
           </Grid>
 
           <!-- Per-language editor -->
