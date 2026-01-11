@@ -22,13 +22,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SCDToolkit.Core\SCDToolkit.Core.csproj" />
-    <ProjectReference Include="..\SCDToolkit.Updater\SCDToolkit.Updater.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <Target Name="CopyUpdaterExe" AfterTargets="Build;Publish">
+  <Target Name="CopyUpdaterExe" AfterTargets="Build" Condition="'$(PublishDir)' == ''">
     <PropertyGroup>
-      <_DesktopOutputDir Condition="'$(PublishDir)' != ''">$(PublishDir)</_DesktopOutputDir>
-      <_DesktopOutputDir Condition="'$(PublishDir)' == ''">$(OutDir)</_DesktopOutputDir>
+      <_DesktopOutputDir>$(OutDir)</_DesktopOutputDir>
 
       <_UpdaterDir Condition="'$(RuntimeIdentifier)' != ''">$(MSBuildProjectDirectory)\..\SCDToolkit.Updater\bin\$(Configuration)\net10.0-windows\$(RuntimeIdentifier)\</_UpdaterDir>
       <_UpdaterDir Condition="'$(RuntimeIdentifier)' == ''">$(MSBuildProjectDirectory)\..\SCDToolkit.Updater\bin\$(Configuration)\net10.0-windows\</_UpdaterDir>

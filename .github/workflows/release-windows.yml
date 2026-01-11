@@ -54,8 +54,11 @@ jobs:
           if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
           New-Item -ItemType Directory -Force -Path "$stage/app" | Out-Null
 
-          # Root: launcher + updater
+          # Root: launcher + updater (copy all runtime files)
           Copy-Item (Join-Path $launcherPublish "SCDToolkit.exe") $stage -Force
+          Copy-Item (Join-Path $launcherPublish "SCDToolkit.dll") $stage -Force
+          Copy-Item (Join-Path $launcherPublish "SCDToolkit.deps.json") $stage -Force
+          Copy-Item (Join-Path $launcherPublish "SCDToolkit.runtimeconfig.json") $stage -Force
           Copy-Item (Join-Path $updaterPublish "updater.exe") $stage -Force
           Copy-Item (Join-Path $updaterPublish "updater.deps.json") $stage -Force
           Copy-Item (Join-Path $updaterPublish "updater.runtimeconfig.json") $stage -Force

@@ -11,41 +11,58 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        var baseDir = AppContext.BaseDirectory;
-        var appDir = Path.Combine(baseDir, "app");
-
-        var targetExe = ResolveTargetExe(appDir);
-        if (targetExe is null)
-        {
-            MessageBox.Show(
-                $"Could not find the app executable in:\n{appDir}",
-                "SCDToolkit",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-            return;
-        }
-
+        var logPath = Path.Combine(AppContext.BaseDirectory, "launcher.log");
         try
         {
+            var baseDir = AppContext.BaseDirectory;
+            var appDir = Path.Combine(baseDir, "app");
+            File.WriteAllText(logPath, $"BaseDir: {baseDir}\nAppDir: {appDir}\nExists: {Directory.Exists(appDir)}\n");
+
+            var targetExe = ResolveTargetExe(appDir);
+            File.AppendAllText(logPath, $"TargetExe: {targetExe}\n");
+            
+            if (targetExe is null)
+            {
+                MessageBox.Show(
+                    $"Could not find the app executable in:\n{appDir}\n\nBase: {baseDir}\nExists: {Directory.Exists(appDir)}",
+                    "SCDToolkit Launcher",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
             var psi = new ProcessStartInfo
             {
                 FileName = targetExe,
                 WorkingDirectory = Path.GetDirectoryName(targetExe) ?? appDir,
-                UseShellExecute = false,
+                UseShellExecute = true,
             };
 
-            foreach (var arg in args)
+            // When UseShellExecute is true, use Arguments instead of ArgumentList
+            if (args.Length > 0)
             {
-                psi.ArgumentList.Add(arg);
+                psi.Arguments = string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a));
             }
 
-            Process.Start(psi);
+            File.AppendAllText(logPath, $"Starting: {psi.FileName}\nWorkingDir: {psi.WorkingDirectory}\n");
+            var proc = Process.Start(psi);
+            File.AppendAllText(logPath, $"Process started: {proc != null}\nPID: {proc?.Id}\n");
+            
+            if (proc == null)
+            {
+                MessageBox.Show(
+                    $"Process.Start returned null for:\n{targetExe}",
+                    "SCDToolkit Launcher",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
         }
         catch (Exception ex)
         {
+            File.AppendAllText(logPath, $"ERROR: {ex}\n");
             MessageBox.Show(
-                $"Failed to start the app:\n{ex.Message}",
-                "SCDToolkit",
+                $"Failed to start the app:\n{ex.Message}\n\n{ex.StackTrace}",
+                "SCDToolkit Launcher",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

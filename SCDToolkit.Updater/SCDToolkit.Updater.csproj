@@ -6,5 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>updater</AssemblyName>
+    <ApplicationIcon>..\SCDToolkit.Desktop\Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 </Project>
