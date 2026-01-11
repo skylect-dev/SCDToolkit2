@@ -142,7 +142,7 @@ namespace SCDToolkit.Desktop.ViewModels
                         await gate.WaitAsync();
                         try
                         {
-                            await Task.Run(() => ScdVolumePatcher.PatchVolume(file.FilePath, (float)VolumeMultiplier));
+                            await Task.Run(() => ScdVolumePatcher.PatchVolume(file.FilePath, (float)VolumeMultiplier, verbose: true));
                             ScdNormalizationManager.RecordAppliedProfile(file.FilePath, profileKey, userTuned: false);
                         }
                         catch (Exception ex)

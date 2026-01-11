@@ -41,16 +41,11 @@
                 <DataTemplate DataType="vm:NormalizeFolderGroupViewModel">
                   <StackPanel Margin="0,0,0,8">
                     <!-- Folder header: checkbox selects all in folder; clicking row toggles expand -->
-                    <ToggleButton IsChecked="{Binding IsExpanded}" Background="Transparent" BorderThickness="0" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
-                        <PathIcon Grid.Column="0" Width="16" Height="16" Foreground="{StaticResource TextSecondaryBrush}" Data="M6,4 L14,10 L6,16 Z">
-                          <PathIcon.RenderTransform>
-                            <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}, FallbackValue=0}" CenterX="10" CenterY="10" />
-                          </PathIcon.RenderTransform>
-                        </PathIcon>
-                        <CheckBox Grid.Column="1" Margin="8,0,0,0" IsChecked="{Binding IsAllSelected}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Margin="8,0,0,0" Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="3" Margin="6,0,0,0" Text="{Binding ItemCount, StringFormat='({0})'}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
+                    <ToggleButton Classes="FolderHeaderToggle" IsChecked="{Binding IsExpanded}" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                      <Grid ColumnDefinitions="Auto,Auto,Auto,*" VerticalAlignment="Center">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsAllSelected}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Margin="8,0,0,0" Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Margin="6,0,0,0" Text="{Binding ItemCount, StringFormat='({0})'}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
                       </Grid>
                     </ToggleButton>
 
