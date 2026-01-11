@@ -7,7 +7,7 @@
         x:Class="SCDToolkit.Desktop.Views.MainWindow"
         x:Name="RootWindow"
         x:DataType="vm:MainViewModel"
-        Title="SCD Toolkit"
+        Title="SCDToolkit2"
   Icon="avares://SCDToolkit.Desktop/Assets/icon.ico"
         Width="1400"
         Height="900"
