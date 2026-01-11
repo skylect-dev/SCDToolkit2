@@ -242,8 +242,8 @@ namespace SCDToolkit.Desktop.ViewModels
         [ObservableProperty]
         private RandoFolderGroupViewModel? selectedKhRandoFolderGroup;
 
-        public bool CanConvertToScd => SelectedItem?.Path != null && SelectedItem.Path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase);
-        public bool CanConvertToWav => SelectedItem?.Path != null && SelectedItem.Path.EndsWith(".scd", StringComparison.OrdinalIgnoreCase);
+        public bool CanConvertToScd => SelectedItem?.Path != null && !SelectedItem.Path.EndsWith(".scd", StringComparison.OrdinalIgnoreCase);
+        public bool CanConvertToWav => SelectedItem?.Path != null && !SelectedItem.Path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase);
         [ObservableProperty]
         private string playPauseGlyph = "▶";
 
@@ -1683,21 +1683,73 @@ namespace SCDToolkit.Desktop.ViewModels
             var sourcePath = SelectedItem.Path;
             
             var ext = System.IO.Path.GetExtension(sourcePath).ToUpperInvariant();
-            if (ext != ".WAV")
+            if (ext == ".SCD")
             {
-                System.Diagnostics.Debug.WriteLine("Only WAV files can be converted to SCD");
+                System.Diagnostics.Debug.WriteLine("Already an SCD file, no conversion needed");
                 return;
             }
 
             try
             {
+                // If the source is not WAV, convert it to WAV first
+                string wavPath = sourcePath;
+                if (ext != ".WAV")
+                {
+                    var ffmpegPath = ResolveFfmpegPath();
+                    if (string.IsNullOrWhiteSpace(ffmpegPath))
+                    {
+                        System.Diagnostics.Debug.WriteLine("ffmpeg.exe not found - cannot convert non-WAV files to SCD");
+                        return;
+                    }
+
+                    if (Path.IsPathRooted(ffmpegPath) && !System.IO.File.Exists(ffmpegPath))
+                    {
+                        System.Diagnostics.Debug.WriteLine("ffmpeg.exe not found at: " + ffmpegPath);
+                        return;
+                    }
+
+                    // Create temporary WAV file
+                    wavPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"scdtoolkit_convert_{Guid.NewGuid():N}.wav");
+
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = ffmpegPath,
+                        Arguments = $"-y -hide_banner -nostats -i \"{sourcePath}\" -vn -map 0:a:0 -c:a pcm_s16le \"{wavPath}\"",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    };
+
+                    using (var process = System.Diagnostics.Process.Start(psi))
+                    {
+                        if (process == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Failed to start ffmpeg");
+                            return;
+                        }
+
+                        await process.StandardOutput.ReadToEndAsync();
+                        var err = await process.StandardError.ReadToEndAsync();
+
+                        await process.WaitForExitAsync();
+                        
+                        if (process.ExitCode != 0 || !System.IO.File.Exists(wavPath))
+                        {
+                            System.Diagnostics.Debug.WriteLine("ffmpeg conversion failed: " + err);
+                            return;
+                        }
+                    }
+                }
+
+                // Now proceed with WAV to SCD conversion
                 // Ensure loop tags exist on the WAV so the encoder can preserve them
-                var (existingLoop, _) = WavLoopTagReader.Read(sourcePath);
+                var (existingLoop, _) = WavLoopTagReader.Read(wavPath);
                 if (existingLoop == null && SelectedItem.LoopEnd > SelectedItem.LoopStart)
                 {
                     try
                     {
-                        WavLoopTagWriter.Write(sourcePath, SelectedItem.LoopStart, SelectedItem.LoopEnd);
+                        WavLoopTagWriter.Write(wavPath, SelectedItem.LoopStart, SelectedItem.LoopEnd);
                     }
                     catch (Exception ex)
                     {
@@ -1712,6 +1764,11 @@ namespace SCDToolkit.Desktop.ViewModels
                 if (baseScd == null)
                 {
                     System.Diagnostics.Debug.WriteLine("No SCD file found to use as template");
+                    // Clean up temp WAV if we created one
+                    if (ext != ".WAV" && System.IO.File.Exists(wavPath))
+                    {
+                        try { System.IO.File.Delete(wavPath); } catch { }
+                    }
                     return;
                 }
 
@@ -1719,6 +1776,11 @@ namespace SCDToolkit.Desktop.ViewModels
                 if (window?.StorageProvider == null)
                 {
                     System.Diagnostics.Debug.WriteLine("StorageProvider unavailable");
+                    // Clean up temp WAV if we created one
+                    if (ext != ".WAV" && System.IO.File.Exists(wavPath))
+                    {
+                        try { System.IO.File.Delete(wavPath); } catch { }
+                    }
                     return;
                 }
 
@@ -1729,15 +1791,29 @@ namespace SCDToolkit.Desktop.ViewModels
                     FileTypeChoices = new List<FilePickerFileType> { new FilePickerFileType("SCD") { Patterns = new List<string> { "*.scd" } } }
                 });
                 var outputPath = saveResult?.TryGetLocalPath();
-                if (string.IsNullOrWhiteSpace(outputPath)) return;
+                if (string.IsNullOrWhiteSpace(outputPath))
+                {
+                    // Clean up temp WAV if we created one
+                    if (ext != ".WAV" && System.IO.File.Exists(wavPath))
+                    {
+                        try { System.IO.File.Delete(wavPath); } catch { }
+                    }
+                    return;
+                }
                 
                 var encoder = new SCDToolkit.Core.Services.ScdEncoderService();
-                var resultPath = await encoder.EncodeAsync(baseScd.Path, sourcePath, quality: 10, fullLoop: false);
+                var resultPath = await encoder.EncodeAsync(baseScd.Path, wavPath, quality: 10, fullLoop: false);
 
                 // Move/copy to chosen path if encoder wrote elsewhere
                 if (!string.Equals(resultPath, outputPath, StringComparison.OrdinalIgnoreCase))
                 {
                     System.IO.File.Copy(resultPath, outputPath, overwrite: true);
+                }
+
+                // Clean up temp WAV if we created one
+                if (ext != ".WAV" && System.IO.File.Exists(wavPath))
+                {
+                    try { System.IO.File.Delete(wavPath); } catch { }
                 }
                 
                 // Refresh library to show new file
@@ -1757,17 +1833,14 @@ namespace SCDToolkit.Desktop.ViewModels
             var sourcePath = SelectedItem.Path;
             
             var ext = System.IO.Path.GetExtension(sourcePath).ToUpperInvariant();
-            if (ext != ".SCD")
+            if (ext == ".WAV")
             {
-                System.Diagnostics.Debug.WriteLine("Only SCD files can be converted to WAV");
+                System.Diagnostics.Debug.WriteLine("Already a WAV file, no conversion needed");
                 return;
             }
 
             try
             {
-                var scdParser = new ScdParser();
-                var (scdLoop, _) = scdParser.ReadScdInfo(sourcePath);
-
                 var window = GetMainWindow();
                 if (window?.StorageProvider == null)
                 {
@@ -1783,51 +1856,116 @@ namespace SCDToolkit.Desktop.ViewModels
                 });
                 var outputPath = saveResult?.TryGetLocalPath();
                 if (string.IsNullOrWhiteSpace(outputPath)) return;
-                
-                var vgmstreamPath = ResolveVgmstreamPath();
-                if (!System.IO.File.Exists(vgmstreamPath))
-                {
-                    System.Diagnostics.Debug.WriteLine("vgmstream-cli.exe not found");
-                    return;
-                }
 
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = vgmstreamPath,
-                    Arguments = $"-i -o \"{outputPath}\" \"{sourcePath}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
+                LoopPoints? loopPoints = null;
 
-                using var process = System.Diagnostics.Process.Start(psi);
-                if (process != null)
+                // For SCD files, use vgmstream and try to extract loop info
+                if (ext == ".SCD")
                 {
-                    var outputText = await process.StandardOutput.ReadToEndAsync();
-                    outputText += await process.StandardError.ReadToEndAsync();
-
-                    await process.WaitForExitAsync();
+                    var scdParser = new ScdParser();
+                    var (scdLoop, _) = scdParser.ReadScdInfo(sourcePath);
                     
-                    if (process.ExitCode == 0 && System.IO.File.Exists(outputPath))
+                    var vgmstreamPath = ResolveVgmstreamPath();
+                    if (!System.IO.File.Exists(vgmstreamPath))
                     {
-                        var loopPoints = ParseVgmstreamLoopInfo(outputText) ?? scdLoop;
-                        if (loopPoints != null && loopPoints.EndSample > loopPoints.StartSample)
+                        System.Diagnostics.Debug.WriteLine("vgmstream-cli.exe not found");
+                        return;
+                    }
+
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = vgmstreamPath,
+                        Arguments = $"-i -o \"{outputPath}\" \"{sourcePath}\"",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    };
+
+                    using (var process = System.Diagnostics.Process.Start(psi))
+                    {
+                        if (process == null)
                         {
-                            try
-                            {
-                                WavLoopTagWriter.Write(outputPath, loopPoints.StartSample, loopPoints.EndSample);
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine($"Unable to write WAV loop tags: {ex.Message}");
-                            }
+                            System.Diagnostics.Debug.WriteLine("Failed to start vgmstream");
+                            return;
                         }
 
-                        // Refresh library to show new file
-                        await Rescan();
+                        var outputText = await process.StandardOutput.ReadToEndAsync();
+                        outputText += await process.StandardError.ReadToEndAsync();
+
+                        await process.WaitForExitAsync();
+                        
+                        if (process.ExitCode != 0 || !System.IO.File.Exists(outputPath))
+                        {
+                            System.Diagnostics.Debug.WriteLine("vgmstream conversion failed");
+                            return;
+                        }
+
+                        loopPoints = ParseVgmstreamLoopInfo(outputText) ?? scdLoop;
                     }
                 }
+                else
+                {
+                    // For other formats (MP3, OGG, etc.), use ffmpeg
+                    var ffmpegPath = ResolveFfmpegPath();
+                    if (string.IsNullOrWhiteSpace(ffmpegPath))
+                    {
+                        System.Diagnostics.Debug.WriteLine("ffmpeg.exe not found");
+                        return;
+                    }
+
+                    if (Path.IsPathRooted(ffmpegPath) && !System.IO.File.Exists(ffmpegPath))
+                    {
+                        System.Diagnostics.Debug.WriteLine("ffmpeg.exe not found at: " + ffmpegPath);
+                        return;
+                    }
+
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = ffmpegPath,
+                        Arguments = $"-y -hide_banner -nostats -i \"{sourcePath}\" -vn -map 0:a:0 -c:a pcm_s16le \"{outputPath}\"",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    };
+
+                    using (var process = System.Diagnostics.Process.Start(psi))
+                    {
+                        if (process == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Failed to start ffmpeg");
+                            return;
+                        }
+
+                        await process.StandardOutput.ReadToEndAsync();
+                        var err = await process.StandardError.ReadToEndAsync();
+
+                        await process.WaitForExitAsync();
+                        
+                        if (process.ExitCode != 0 || !System.IO.File.Exists(outputPath))
+                        {
+                            System.Diagnostics.Debug.WriteLine("ffmpeg conversion failed: " + err);
+                            return;
+                        }
+                    }
+                }
+
+                // Try to write loop tags if we have loop points
+                if (loopPoints != null && loopPoints.EndSample > loopPoints.StartSample)
+                {
+                    try
+                    {
+                        WavLoopTagWriter.Write(outputPath, loopPoints.StartSample, loopPoints.EndSample);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Unable to write WAV loop tags: {ex.Message}");
+                    }
+                }
+
+                // Refresh library to show new file
+                await Rescan();
             }
             catch (Exception ex)
             {
@@ -1892,6 +2030,27 @@ namespace SCDToolkit.Desktop.ViewModels
                 return System.IO.Path.GetFullPath(repoLevel);
 
             return "vgmstream-cli.exe";
+        }
+
+        private static string? ResolveFfmpegPath()
+        {
+            var env = Environment.GetEnvironmentVariable("FFMPEG_PATH");
+            if (!string.IsNullOrWhiteSpace(env) && System.IO.File.Exists(env))
+            {
+                return env;
+            }
+
+            var baseDir = AppContext.BaseDirectory;
+            var local = System.IO.Path.Combine(baseDir, "ffmpeg", "bin", "ffmpeg.exe");
+            if (System.IO.File.Exists(local))
+                return local;
+
+            // Try repo-level ffmpeg folder
+            var repoLevel = System.IO.Path.GetFullPath(System.IO.Path.Combine(baseDir, "..", "..", "..", "..", "SCDToolkit.Desktop", "ffmpeg", "bin", "ffmpeg.exe"));
+            if (System.IO.File.Exists(repoLevel))
+                return repoLevel;
+
+            return "ffmpeg.exe";
         }
 
         partial void OnSearchTextChanged(string value)
