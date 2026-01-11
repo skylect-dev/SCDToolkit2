@@ -1,17 +1,12 @@
-# SCDToolkit2 (Avalonia/.NET) Git Ignore
-# Keep this repo clean: ignore build outputs, IDE junk, and legacy/reference folders.
-
-########################################
 # OS / Editor
-########################################
+
 .DS_Store
 Thumbs.db
 Desktop.ini
 *.lnk
 
-########################################
 # Visual Studio / Rider / VS Code
-########################################
+
 .vs/
 .idea/
 *.suo
@@ -24,9 +19,9 @@ _ReSharper*/
 .vscode/
 .gitignore
 
-########################################
+
 # .NET build outputs
-########################################
+
 **/bin/
 **/obj/
 **/out/
@@ -45,9 +40,9 @@ _ReSharper*/
 **/Publish/
 **/*.publishproj
 
-########################################
+
 # Logs / temp
-########################################
+
 *.log
 *.tmp
 *.temp
@@ -55,18 +50,18 @@ _ReSharper*/
 *.old
 *.cache
 
-########################################
+
 # Local app/runtime data (dev)
-########################################
+
 scdtoolkit_config.json
 
 
 # Repo-local docs/reference assets not required by the app
 doc/
 
-# Scratch / one-off scripts
+ Scratch / one-off scripts
 *.csx
 
 
-# Local staging output
+ Local staging output
 dist/
