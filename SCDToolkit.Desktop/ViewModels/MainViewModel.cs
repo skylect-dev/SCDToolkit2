@@ -1281,11 +1281,15 @@ namespace SCDToolkit.Desktop.ViewModels
             var owner = GetMainWindow();
 
             var tcs = new TaskCompletionSource<bool>();
-            var cancelButton = new Button { Content = "Cancel", MinWidth = 80 };
+            var cancelButton = new Button { Content = "Cancel", MinWidth = 80, Foreground = Avalonia.Media.Brushes.White };
             var okButton = new Button { Content = okText, MinWidth = 80 };
             if (isDanger)
             {
                 okButton.Background = Avalonia.Media.Brushes.IndianRed;
+                okButton.Foreground = Avalonia.Media.Brushes.White;
+            }
+            else
+            {
                 okButton.Foreground = Avalonia.Media.Brushes.White;
             }
 
@@ -1302,7 +1306,7 @@ namespace SCDToolkit.Desktop.ViewModels
                     Spacing = 12,
                     Children =
                     {
-                        new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Avalonia.Media.Brushes.White },
                         new StackPanel
                         {
                             Orientation = Orientation.Horizontal,
@@ -1338,7 +1342,7 @@ namespace SCDToolkit.Desktop.ViewModels
             var owner = GetMainWindow();
 
             var tcs = new TaskCompletionSource<bool>();
-            var okButton = new Button { Content = "OK", MinWidth = 80 };
+            var okButton = new Button { Content = "OK", MinWidth = 80, Foreground = Avalonia.Media.Brushes.White };
 
             var dialog = new Window
             {
@@ -1353,7 +1357,7 @@ namespace SCDToolkit.Desktop.ViewModels
                     Spacing = 12,
                     Children =
                     {
-                        new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Avalonia.Media.Brushes.White },
                         new StackPanel
                         {
                             Orientation = Orientation.Horizontal,
@@ -1524,6 +1528,13 @@ namespace SCDToolkit.Desktop.ViewModels
         {
             if (SelectedItem?.Path == null)
             {
+                return;
+            }
+
+            var ext = System.IO.Path.GetExtension(SelectedItem.Path).ToUpperInvariant();
+            if (ext != ".WAV" && ext != ".SCD")
+            {
+                await ShowOkAsync("Loop Editor", "Loop Editor only supports WAV and SCD files.");
                 return;
             }
 
