@@ -67,19 +67,35 @@ namespace SCDToolkit.Core.Utils
 
         public static int GetTagData(int position, byte[] data)
         {
-            while (data[position] - 0x30 < 0 || data[position] - 0x30 > 9)
+            if (position < 0 || position >= data.Length)
+            {
+                return -1;
+            }
+
+            // Skip non-digit characters
+            while (position < data.Length && (data[position] - 0x30 < 0 || data[position] - 0x30 > 9))
             {
                 position = position + 1;
             }
+
+            if (position >= data.Length)
+            {
+                return -1;
+            }
+
             int initialPosition = position;
-            while (data[position] - 0x30 >= 0 && data[position] - 0x30 <= 9)
+
+            // Read digit characters
+            while (position < data.Length && data[position] - 0x30 >= 0 && data[position] - 0x30 <= 9)
             {
                 position = position + 1;
-                if (position == data.Length)
-                {
-                    break;
-                }
             }
+
+            if (position == initialPosition)
+            {
+                return -1;
+            }
+
             byte[] number = new byte[position - initialPosition];
             for (int i = 0; i < number.Length; i++)
             {
