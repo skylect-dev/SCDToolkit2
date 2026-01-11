@@ -336,7 +336,9 @@ namespace SCDToolkit.Desktop.Views
 
             if (e.Data.Contains(DataFormats.FileNames))
             {
+#pragma warning disable CS0618
                 var files = e.Data.GetFileNames()?.ToArray() ?? Array.Empty<string>();
+#pragma warning restore CS0618
                 if (files.Any(f => f.EndsWith(".scd", StringComparison.OrdinalIgnoreCase)))
                 {
                     e.DragEffects = DragDropEffects.Copy;
@@ -358,7 +360,9 @@ namespace SCDToolkit.Desktop.Views
                 try { Directory.CreateDirectory(destFolder); } catch { return; }
             }
 
+#pragma warning disable CS0618
             var files = e.Data.GetFileNames()?.ToArray() ?? Array.Empty<string>();
+#pragma warning restore CS0618
             var copiedCount = 0;
             foreach (var src in files)
             {
