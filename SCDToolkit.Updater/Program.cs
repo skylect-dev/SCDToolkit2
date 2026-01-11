@@ -167,6 +167,10 @@ internal static class Program
             {
                 dstFile = Path.Combine(Path.GetDirectoryName(dstFile)!, "updater.runtimeconfig.next.json");
             }
+            else if (string.Equals(fileName, "updater.dll", StringComparison.OrdinalIgnoreCase))
+            {
+                dstFile = Path.Combine(Path.GetDirectoryName(dstFile)!, "updater.next.dll");
+            }
 
             Directory.CreateDirectory(Path.GetDirectoryName(dstFile)!);
 
@@ -205,8 +209,9 @@ internal static class Program
             var nextExe = Path.Combine(installDir, "updater.next.exe");
             var nextDeps = Path.Combine(installDir, "updater.deps.next.json");
             var nextRuntime = Path.Combine(installDir, "updater.runtimeconfig.next.json");
+            var nextDll = Path.Combine(installDir, "updater.next.dll");
 
-            if (!File.Exists(nextExe) && !File.Exists(nextDeps) && !File.Exists(nextRuntime))
+            if (!File.Exists(nextExe) && !File.Exists(nextDeps) && !File.Exists(nextRuntime) && !File.Exists(nextDll))
             {
                 return;
             }
@@ -225,6 +230,7 @@ internal static class Program
                 "  )\r\n" +
                 ")\r\n" +
                 "if exist \"updater.next.exe\" (move /y \"updater.next.exe\" \"updater.exe\" >nul)\r\n" +
+                "if exist \"updater.next.dll\" (move /y \"updater.next.dll\" \"updater.dll\" >nul)\r\n" +
                 "if exist \"updater.deps.next.json\" (move /y \"updater.deps.next.json\" \"updater.deps.json\" >nul)\r\n" +
                 "if exist \"updater.runtimeconfig.next.json\" (move /y \"updater.runtimeconfig.next.json\" \"updater.runtimeconfig.json\" >nul)\r\n" +
                 "del \"%~f0\"\r\n");

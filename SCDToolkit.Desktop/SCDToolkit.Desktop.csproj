@@ -7,8 +7,8 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <!-- Version matching git tags: update both when releasing -->
-    <Version>1.0.4</Version>
-    <InformationalVersion>1.0.4</InformationalVersion>
+    <Version>1.0.5</Version>
+    <InformationalVersion>1.0.5</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
