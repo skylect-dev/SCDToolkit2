@@ -29,6 +29,7 @@ namespace SCDToolkit.Desktop
                 window.DataContext = vm;
                 desktop.MainWindow = window;
                 _ = vm.ApplyConfigAsync(config);
+                vm.QueueAutoUpdateCheck();
             }
 
             base.OnFrameworkInitializationCompleted();

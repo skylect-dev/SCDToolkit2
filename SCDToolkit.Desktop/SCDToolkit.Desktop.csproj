@@ -7,8 +7,8 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <!-- Version matching git tags: update both when releasing -->
-    <Version>1.0.2</Version>
-    <InformationalVersion>1.0.2</InformationalVersion>
+    <Version>1.0.1</Version>
+    <InformationalVersion>1.0.1</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +36,7 @@
 
     <ItemGroup>
       <_UpdaterFiles Include="$(_UpdaterDir)updater.exe" Condition="Exists('$(_UpdaterDir)updater.exe')" />
+      <_UpdaterFiles Include="$(_UpdaterDir)updater.dll" Condition="Exists('$(_UpdaterDir)updater.dll')" />
       <_UpdaterFiles Include="$(_UpdaterDir)updater.deps.json" Condition="Exists('$(_UpdaterDir)updater.deps.json')" />
       <_UpdaterFiles Include="$(_UpdaterDir)updater.runtimeconfig.json" Condition="Exists('$(_UpdaterDir)updater.runtimeconfig.json')" />
     </ItemGroup>

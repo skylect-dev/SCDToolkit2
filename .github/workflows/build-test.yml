@@ -58,6 +58,7 @@ jobs:
           Copy-Item (Join-Path $launcherPublish "SCDToolkit.deps.json") $stage -Force
           Copy-Item (Join-Path $launcherPublish "SCDToolkit.runtimeconfig.json") $stage -Force
           Copy-Item (Join-Path $updaterPublish "updater.exe") $stage -Force
+          Copy-Item (Join-Path $updaterPublish "updater.dll") $stage -Force
           Copy-Item (Join-Path $updaterPublish "updater.deps.json") $stage -Force
           Copy-Item (Join-Path $updaterPublish "updater.runtimeconfig.json") $stage -Force
 

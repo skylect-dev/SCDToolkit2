@@ -3,6 +3,7 @@ using Avalonia.ReactiveUI;
 using SCDToolkit.Desktop.Services;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace SCDToolkit.Desktop
 {
@@ -47,10 +48,14 @@ namespace SCDToolkit.Desktop
 				if (string.IsNullOrWhiteSpace(rootDir))
 					return;
 
-				var newUpdaterPath = Path.Combine(rootDir, "updater_new.exe");
 				var updaterPath = Path.Combine(rootDir, "updater.exe");
+				var nextUpdaterPath = new[]
+				{
+					Path.Combine(rootDir, "updater_new.exe"),
+					Path.Combine(rootDir, "updater.next.exe")
+				}.FirstOrDefault(File.Exists);
 
-				if (!File.Exists(newUpdaterPath))
+				if (string.IsNullOrWhiteSpace(nextUpdaterPath))
 					return;
 
 				// Try to replace old updater with new one
@@ -60,11 +65,23 @@ namespace SCDToolkit.Desktop
 					catch { }
 				}
 
-				File.Move(newUpdaterPath, updaterPath, overwrite: true);
+				File.Move(nextUpdaterPath, updaterPath, overwrite: true);
 
-				// Clean up any .next files from previous update attempt
-				try { File.Delete(Path.Combine(rootDir, "updater.deps.next.json")); } catch { }
-				try { File.Delete(Path.Combine(rootDir, "updater.runtimeconfig.next.json")); } catch { }
+				// Promote matching .next files if present
+				try
+				{
+					var nextDeps = Path.Combine(rootDir, "updater.deps.next.json");
+					var deps = Path.Combine(rootDir, "updater.deps.json");
+					if (File.Exists(nextDeps)) File.Move(nextDeps, deps, overwrite: true);
+				}
+				catch { }
+				try
+				{
+					var nextRuntime = Path.Combine(rootDir, "updater.runtimeconfig.next.json");
+					var runtime = Path.Combine(rootDir, "updater.runtimeconfig.json");
+					if (File.Exists(nextRuntime)) File.Move(nextRuntime, runtime, overwrite: true);
+				}
+				catch { }
 			}
 			catch
 			{

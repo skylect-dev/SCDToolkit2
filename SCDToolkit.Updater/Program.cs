@@ -55,7 +55,7 @@ internal static class Program
 
             if (pid.HasValue)
             {
-                TryWaitForExit(pid.Value, TimeSpan.FromSeconds(15));
+                TryWaitForExit(pid.Value, TimeSpan.FromSeconds(60));
             }
 
             using var form = new UpdateForm();
@@ -172,17 +172,25 @@ internal static class Program
 
             // Retry a bit in case the app is still releasing file handles.
             const int maxAttempts = 10;
+            Exception? lastError = null;
             for (var attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 try
                 {
                     File.Copy(srcFile, dstFile, overwrite: true);
+                    lastError = null;
                     break;
                 }
-                catch when (attempt < maxAttempts)
+                catch (Exception ex) when (attempt < maxAttempts)
                 {
+                    lastError = ex;
                     Thread.Sleep(250);
                 }
+            }
+
+            if (lastError != null)
+            {
+                throw new IOException($"Failed to copy '{rel}' after {maxAttempts} attempts.", lastError);
             }
 
             done++;

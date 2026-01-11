@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using Avalonia;
@@ -37,6 +38,8 @@ namespace SCDToolkit.Desktop.ViewModels
         private int _currentIndex = -1;
         private string? _currentPlayingPath;
         private DateTime _lastKh2StatusCheckUtc = DateTime.MinValue;
+
+        private int _autoUpdateCheckQueued;
 
         private bool _suppressConfigSave;
 
@@ -475,30 +478,205 @@ namespace SCDToolkit.Desktop.ViewModels
                 return;
             }
 
-            var proceed = await ConfirmAsync(title: "Update", message: "Check GitHub for the latest version and update now?\n\nThe app will close to apply the update.", okText: "Update", isDanger: false);
-            if (!proceed)
+            await CheckAndMaybeUpdateAsync(showUpToDateMessage: true, closeOwnerIfUpdating: true);
+        }
+
+        public void QueueAutoUpdateCheck()
+        {
+            // Only run once per app lifetime.
+            if (Interlocked.Exchange(ref _autoUpdateCheckQueued, 1) == 1)
+            {
+                return;
+            }
+
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    await CheckAndMaybeUpdateAsync(showUpToDateMessage: false, closeOwnerIfUpdating: true);
+                }
+                catch
+                {
+                    // Best effort, never block startup.
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private async Task CheckAndMaybeUpdateAsync(bool showUpToDateMessage, bool closeOwnerIfUpdating)
+        {
+            var owner = GetMainWindow();
+            if (owner == null)
             {
                 return;
             }
 
             try
             {
-                var currentExe = Environment.ProcessPath;
                 var service = new Services.UpdateService();
-                var (started, message) = await service.TryUpdateToLatestAsync(currentExe ?? string.Empty);
+                var info = await service.GetUpdateInfoAsync();
+
+                if (!info.IsUpdateAvailable)
+                {
+                    if (showUpToDateMessage)
+                    {
+                        await ShowOkAsync("Update", info.Message);
+                    }
+                    return;
+                }
+
+                var proceed = await ConfirmAsync(
+                    title: "Update Available",
+                    message: $"{info.Message}\n\nDownload and install now?\n\nThe app will close to apply the update.",
+                    okText: "Update",
+                    isDanger: false);
+
+                if (!proceed)
+                {
+                    return;
+                }
+
+                var currentExe = Environment.ProcessPath ?? string.Empty;
+                var zipPath = await DownloadUpdateWithProgressAsync(owner, service, info);
+                if (string.IsNullOrWhiteSpace(zipPath))
+                {
+                    return;
+                }
+
+                var (started, message) = service.TryStartUpdaterFromZip(currentExe, zipPath);
                 if (!started)
                 {
                     await ShowOkAsync("Update", message);
                     return;
                 }
 
-                await ShowOkAsync("Update", message);
-                owner.Close();
+                if (closeOwnerIfUpdating)
+                {
+                    try
+                    {
+                        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
+                        {
+                            lifetime.Shutdown();
+                        }
+                        else
+                        {
+                            owner.Close();
+                        }
+                    }
+                    catch
+                    {
+                        owner.Close();
+                    }
+                }
             }
             catch (Exception ex)
             {
-                await ShowOkAsync("Update", ex.Message);
+                if (showUpToDateMessage)
+                {
+                    await ShowOkAsync("Update", ex.Message);
+                }
             }
+        }
+
+        private async Task<string?> DownloadUpdateWithProgressAsync(Window owner, Services.UpdateService service, Services.UpdateService.UpdateInfo info)
+        {
+            var statusText = new TextBlock
+            {
+                Text = "Downloading update...",
+                TextWrapping = TextWrapping.Wrap
+            };
+
+            var progressBar = new ProgressBar
+            {
+                Minimum = 0,
+                Maximum = 100,
+                Height = 18,
+                IsIndeterminate = true
+            };
+
+            var cancel = new Button { Content = "Cancel", MinWidth = 90 };
+            using var cts = new CancellationTokenSource();
+
+            var dialog = new Window
+            {
+                Width = 520,
+                Height = 190,
+                Title = "Downloading Update",
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = owner.Background,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(16),
+                    Spacing = 12,
+                    Children =
+                    {
+                        statusText,
+                        progressBar,
+                        new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            HorizontalAlignment = HorizontalAlignment.Right,
+                            Children = { cancel }
+                        }
+                    }
+                }
+            };
+
+            cancel.Click += (_, _) =>
+            {
+                try { cts.Cancel(); } catch { }
+                try { dialog.Close(); } catch { }
+            };
+
+            // Show the dialog without blocking the async download.
+            _ = dialog.ShowDialog(owner);
+
+            try
+            {
+                var progress = new Progress<Services.UpdateService.DownloadProgress>(p =>
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (p.TotalBytes.HasValue && p.TotalBytes.Value > 0)
+                        {
+                            progressBar.IsIndeterminate = false;
+                            var pct = (double)p.BytesReceived / p.TotalBytes.Value * 100.0;
+                            progressBar.Value = Math.Clamp(pct, 0, 100);
+                            statusText.Text = $"Downloading update... {FormatBytes(p.BytesReceived)} / {FormatBytes(p.TotalBytes.Value)}";
+                        }
+                        else
+                        {
+                            progressBar.IsIndeterminate = true;
+                            statusText.Text = $"Downloading update... {FormatBytes(p.BytesReceived)}";
+                        }
+                    });
+                });
+
+                var zipPath = await service.DownloadUpdateZipAsync(info.ZipUrl, info.Tag, progress, cts.Token);
+                try { dialog.Close(); } catch { }
+                return zipPath;
+            }
+            catch (OperationCanceledException)
+            {
+                await ShowOkAsync("Update", "Update download canceled.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                try { dialog.Close(); } catch { }
+                await ShowOkAsync("Update", ex.Message);
+                return null;
+            }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes < 1024) return $"{bytes} B";
+            var kb = bytes / 1024.0;
+            if (kb < 1024) return $"{kb:0.0} KB";
+            var mb = kb / 1024.0;
+            if (mb < 1024) return $"{mb:0.0} MB";
+            var gb = mb / 1024.0;
+            return $"{gb:0.00} GB";
         }
 
         [RelayCommand]
