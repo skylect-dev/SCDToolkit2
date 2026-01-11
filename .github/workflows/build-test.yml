@@ -1,0 +1,79 @@
+name: Build Test (Windows)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-artifact:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish Desktop (win-x64, Release)
+        shell: pwsh
+        run: |
+          dotnet publish "SCDToolkit.Desktop/SCDToolkit.Desktop.csproj" -c Release -r win-x64
+
+      - name: Publish Launcher (win-x64, Release)
+        shell: pwsh
+        run: |
+          dotnet publish "SCDToolkit.Launcher/SCDToolkit.Launcher.csproj" -c Release -r win-x64
+
+      - name: Publish Updater (win-x64, Release)
+        shell: pwsh
+        run: |
+          dotnet publish "SCDToolkit.Updater/SCDToolkit.Updater.csproj" -c Release -r win-x64
+
+      - name: Create SCDToolkit-Windows.zip
+        shell: pwsh
+        run: |
+          $desktopPublish = "SCDToolkit.Desktop/bin/Release/net10.0-windows/win-x64/publish"
+          $launcherPublish = "SCDToolkit.Launcher/bin/Release/net10.0-windows/win-x64/publish"
+          $updaterPublish = "SCDToolkit.Updater/bin/Release/net10.0-windows/win-x64/publish"
+
+          if (!(Test-Path $desktopPublish)) { throw "Desktop publish folder not found: $desktopPublish" }
+          if (!(Test-Path $launcherPublish)) { throw "Launcher publish folder not found: $launcherPublish" }
+          if (!(Test-Path $updaterPublish)) { throw "Updater publish folder not found: $updaterPublish" }
+
+          $stage = "dist/stage"
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          New-Item -ItemType Directory -Force -Path "$stage/app" | Out-Null
+
+          # Root: launcher + updater (copy all runtime files)
+          Copy-Item (Join-Path $launcherPublish "SCDToolkit.exe") $stage -Force
+          Copy-Item (Join-Path $launcherPublish "SCDToolkit.dll") $stage -Force
+          Copy-Item (Join-Path $launcherPublish "SCDToolkit.deps.json") $stage -Force
+          Copy-Item (Join-Path $launcherPublish "SCDToolkit.runtimeconfig.json") $stage -Force
+          Copy-Item (Join-Path $updaterPublish "updater.exe") $stage -Force
+          Copy-Item (Join-Path $updaterPublish "updater.deps.json") $stage -Force
+          Copy-Item (Join-Path $updaterPublish "updater.runtimeconfig.json") $stage -Force
+
+          # app/: the full desktop publish output
+          Copy-Item (Join-Path $desktopPublish "*") (Join-Path $stage "app") -Recurse -Force
+
+          New-Item -ItemType Directory -Force -Path "dist" | Out-Null
+          $zipPath = "dist/SCDToolkit-Windows.zip"
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zipPath
+          Get-Item $zipPath | Format-List | Out-String
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SCDToolkit-Windows-${{ github.sha }}
+          path: dist/SCDToolkit-Windows.zip
+          retention-days: 7
