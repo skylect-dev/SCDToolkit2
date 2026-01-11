@@ -45,7 +45,7 @@
                       <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
                         <PathIcon Grid.Column="0" Width="16" Height="16" Foreground="{StaticResource TextSecondaryBrush}" Data="M6,4 L14,10 L6,16 Z">
                           <PathIcon.RenderTransform>
-                            <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" CenterX="10" CenterY="10" />
+                            <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}, FallbackValue=0}" CenterX="10" CenterY="10" />
                           </PathIcon.RenderTransform>
                         </PathIcon>
                         <CheckBox Grid.Column="1" Margin="8,0,0,0" IsChecked="{Binding IsAllSelected}" VerticalAlignment="Center" />

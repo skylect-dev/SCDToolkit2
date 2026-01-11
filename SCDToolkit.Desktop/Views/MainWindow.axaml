@@ -420,7 +420,7 @@
                             <!-- Triangle-style expand indicator -->
                             <PathIcon Grid.Column="0" Width="16" Height="16" Foreground="{StaticResource TextSecondaryBrush}" Data="M6,4 L14,10 L6,16 Z">
                               <PathIcon.RenderTransform>
-                                <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" CenterX="10" CenterY="10" />
+                                <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}, FallbackValue=0}" CenterX="10" CenterY="10" />
                               </PathIcon.RenderTransform>
                             </PathIcon>
                             <PathIcon Grid.Column="1" Margin="6,0,0,0" Data="M10,4 L4,4 L4,20 L20,20 L20,8 L11,8 Z M10,4 L11,8" Width="16" Height="16" Foreground="#93c5fd" />
@@ -535,7 +535,7 @@
                             <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
                               <PathIcon Grid.Column="0" Width="16" Height="16" Foreground="{StaticResource TextSecondaryBrush}" Data="M6,4 L14,10 L6,16 Z">
                                 <PathIcon.RenderTransform>
-                                  <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" CenterX="10" CenterY="10" />
+                                  <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}, FallbackValue=0}" CenterX="10" CenterY="10" />
                                 </PathIcon.RenderTransform>
                               </PathIcon>
                               <PathIcon Grid.Column="1" Margin="6,0,0,0" Data="M10,4 L4,4 L4,20 L20,20 L20,8 L11,8 Z M10,4 L11,8" Width="16" Height="16" Foreground="#93c5fd" />
