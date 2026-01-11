@@ -1,0 +1,117 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:SCDToolkit.Desktop.ViewModels"
+  xmlns:conv="clr-namespace:SCDToolkit.Desktop.Converters"
+        x:Class="SCDToolkit.Desktop.Views.NormalizeWindow"
+        x:DataType="vm:NormalizeViewModel"
+        Title="Normalize Audio"
+  Icon="avares://SCDToolkit.Desktop/Assets/icon.ico"
+        Width="900"
+        Height="900"
+        MinWidth="900"
+        MinHeight="900"
+        Background="#0b0c0f"
+        CanResize="True">
+  <Window.Resources>
+    <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#111214" />
+    <SolidColorBrush x:Key="CardBrush" Color="#15171b" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#1f2229" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#e8eaee" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#a8abb2" />
+    <conv:BoolToAngleConverter x:Key="BoolToAngleConverter" />
+    <conv:BoolToDoubleConverter x:Key="BoolToDoubleConverter" />
+  </Window.Resources>
+
+  <Panel Background="{StaticResource PanelBrush}" Margin="16">
+    <Grid RowDefinitions="Auto,*,Auto">
+      <!-- Header -->
+      <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+        <TextBlock Text="Normalize SCD Files" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
+        <TextBlock Text="Select SCD files to normalize volume for in-game playback" Foreground="{StaticResource TextSecondaryBrush}" />
+        <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextSecondaryBrush}" />
+      </StackPanel>
+
+      <!-- Folder-grouped file list with checkboxes -->
+      <Border Grid.Row="1" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+        <Grid>
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding FolderGroups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:NormalizeFolderGroupViewModel">
+                  <StackPanel Margin="0,0,0,8">
+                    <!-- Folder header: checkbox selects all in folder; clicking row toggles expand -->
+                    <ToggleButton IsChecked="{Binding IsExpanded}" Background="Transparent" BorderThickness="0" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
+                        <PathIcon Grid.Column="0" Width="16" Height="16" Foreground="{StaticResource TextSecondaryBrush}" Data="M6,4 L14,10 L6,16 Z">
+                          <PathIcon.RenderTransform>
+                            <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" CenterX="10" CenterY="10" />
+                          </PathIcon.RenderTransform>
+                        </PathIcon>
+                        <CheckBox Grid.Column="1" Margin="8,0,0,0" IsChecked="{Binding IsAllSelected}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Margin="8,0,0,0" Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Margin="6,0,0,0" Text="{Binding ItemCount, StringFormat='({0})'}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
+                      </Grid>
+                    </ToggleButton>
+
+                    <Border Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="6,2"
+                            ClipToBounds="True"
+                            MaxHeight="{Binding IsExpanded, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='5000|0'}"
+                            Opacity="{Binding IsExpanded, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1|0'}"
+                            IsHitTestVisible="{Binding IsExpanded}">
+                      <Border.Transitions>
+                        <Transitions>
+                          <DoubleTransition Property="MaxHeight" Duration="0:0:0.14" />
+                          <DoubleTransition Property="Opacity" Duration="0:0:0.14" />
+                        </Transitions>
+                      </Border.Transitions>
+                      <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="vm:SelectableScdFile">
+                            <CheckBox IsChecked="{Binding IsSelected}" Margin="22,4,0,4" Foreground="{StaticResource TextPrimaryBrush}">
+                              <TextBlock Text="{Binding DisplayName}" />
+                            </CheckBox>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </Border>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <!-- Busy overlay -->
+          <Border Background="#AA000000" IsVisible="{Binding IsBusy}" CornerRadius="8">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Width="420">
+              <TextBlock Text="Normalizing…" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding ProgressText}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" HorizontalAlignment="Center" />
+              <ProgressBar Minimum="0" Maximum="1" Value="{Binding ProgressValue}" Height="8" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Options and actions -->
+      <StackPanel Grid.Row="2" Spacing="12" Margin="0,16,0,0">
+        <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Normalization Method" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
+            <RadioButton GroupName="Method" IsChecked="{Binding IsFullNormalize}" Content="Full Normalize (-12 LUFS)" Foreground="{StaticResource TextPrimaryBrush}" />
+            <RadioButton GroupName="Method" IsChecked="{Binding IsFloatPatch}" Content="Float Patch Only (Quick)" Foreground="{StaticResource TextPrimaryBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="20,4,0,0" IsVisible="{Binding IsFloatPatch}">
+              <TextBlock Text="Volume Multiplier:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+              <NumericUpDown Value="{Binding VolumeMultiplier}" Minimum="0.1" Maximum="3.0" Increment="0.1" FormatString="0.0" Width="100" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <Button Content="Normalize Selected" Command="{Binding NormalizeSelectedCommand}" IsEnabled="{Binding !IsBusy}" Width="150" Background="{StaticResource AccentBrush}" Foreground="{StaticResource TextPrimaryBrush}" />
+          <Button Content="Normalize All" Command="{Binding NormalizeAllCommand}" IsEnabled="{Binding !IsBusy}" Width="150" Background="{StaticResource AccentBrush}" Foreground="{StaticResource TextPrimaryBrush}" />
+          <Button Content="Close" Command="{Binding CancelCommand}" IsEnabled="{Binding !IsBusy}" Width="100" Background="{StaticResource BorderBrush}" Foreground="{StaticResource TextPrimaryBrush}" />
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+  </Panel>
+</Window>

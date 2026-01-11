@@ -1,0 +1,222 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:input="clr-namespace:Avalonia.Input;assembly=Avalonia.Base"
+        xmlns:vm="clr-namespace:SCDToolkit.Desktop.ViewModels"
+        x:Class="SCDToolkit.Desktop.Views.MusicPackCreatorWindow"
+        x:DataType="vm:MusicPackCreatorViewModel"
+  x:Name="Root"
+        Title="KH2 Re:Fined Music Pack Creator"
+        Width="1400"
+        Height="900"
+        MinWidth="900"
+        MinHeight="900"
+        Background="#0b0c0f"
+        mc:Ignorable="d">
+
+  <Window.Resources>
+    <SolidColorBrush x:Key="PanelBrush" Color="#111214" />
+    <SolidColorBrush x:Key="CardBrush" Color="#15171b" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#1f2229" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#e8eaee" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#a8abb2" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6" />
+  </Window.Resources>
+
+  <Window.Styles>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="16">
+
+    <!-- Header -->
+    <StackPanel Margin="0,0,0,12" Spacing="6">
+      <TextBlock Text="Create a Music Pack for Kingdom Hearts II - Re:Fined" Foreground="{StaticResource TextPrimaryBrush}" FontSize="16" FontWeight="SemiBold" />
+      <TextBlock Text="Assign songs from your library to vanilla KH2 tracks. Use the dropdown menus to select source files, or drag and drop files from your library." Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding Status}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <!-- Main panels -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,*">
+
+      <!-- Your Library (left) -->
+      <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10" Margin="0,0,12,0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <TextBlock Text="Your Library" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <TextBlock Text="Search:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <TextBox Width="320" Text="{Binding SourceSearchText, Mode=TwoWay}" Watermark="Filter library files..." />
+          </StackPanel>
+
+          <ListBox Grid.Row="2"
+                   ItemsSource="{Binding FilteredSources}"
+                   SelectedItem="{Binding SelectedLibrarySource, Mode=TwoWay}"
+                   Background="#0f1115"
+                   BorderBrush="{StaticResource BorderBrush}"
+                   BorderThickness="1">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Background="Transparent" Padding="6,4" PointerPressed="LibraryItem_PointerPressed" PointerMoved="LibraryItem_PointerMoved">
+                  <StackPanel Spacing="1">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" />
+                      <TextBlock Text="(Loop)" Foreground="{StaticResource AccentBrush}" IsVisible="{Binding IsLooped}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Path}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <TextBlock Grid.Row="3" Text="{Binding LibrarySummary}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+        </Grid>
+      </Border>
+
+      <!-- Track Assignments (right) -->
+      <Border Grid.Column="1" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <TextBlock Text="Track Assignments" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+
+          <StackPanel Grid.Row="1" Spacing="4" Margin="0,4,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Search:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBox Width="320" Text="{Binding TrackSearchText, Mode=TwoWay}" Watermark="Filter tracks..." />
+            </StackPanel>
+            <TextBlock Text="{Binding TrackListSummary}" Foreground="{StaticResource TextSecondaryBrush}" />
+          </StackPanel>
+
+          <Border Grid.Row="2" Background="#0f1115" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ListBox ItemsSource="{Binding FilteredTracks}"
+                       SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"
+                       Background="Transparent"
+                       BorderThickness="0">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="240,*" Margin="6,4" input:DragDrop.AllowDrop="True">
+                      <TextBlock Text="{Binding TrackName}" Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <ComboBox Grid.Column="1"
+                                ItemsSource="{Binding SourceOptions, ElementName=Root}"
+                                SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
+                                MinWidth="280" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </ScrollViewer>
+          </Border>
+
+          <TextBlock Grid.Row="3" Text="{Binding AssignedSummary}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+        </Grid>
+      </Border>
+
+    </Grid>
+
+    <!-- Music Pack Information (bottom) -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0,12,0,0">
+      <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10" Margin="0,0,12,0">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+          <TextBlock Text="Music Pack Information" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
+            <TextBlock Text="Slot:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <RadioButton Content="Slot 0 (Replaces Vanilla)" GroupName="slot" IsChecked="{Binding IsSlot0}" Command="{Binding SelectSlot0Command}" Foreground="{StaticResource TextPrimaryBrush}" />
+              <RadioButton Content="Slot 1" GroupName="slot" IsChecked="{Binding IsSlot1}" Command="{Binding SelectSlot1Command}" Foreground="{StaticResource TextPrimaryBrush}" />
+              <RadioButton Content="Slot 2" GroupName="slot" IsChecked="{Binding IsSlot2}" Command="{Binding SelectSlot2Command}" Foreground="{StaticResource TextPrimaryBrush}" />
+              <RadioButton Content="Slot 1+2 (2 Files)" GroupName="slot" IsChecked="{Binding IsSlot1And2}" Command="{Binding SelectSlot1And2Command}" Foreground="{StaticResource TextPrimaryBrush}" />
+            </StackPanel>
+          </StackPanel>
+
+          <TextBlock Grid.Row="2" Text="Mod Manager Info (mod.yml)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+
+          <Grid Grid.Row="3" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" Margin="0,4,0,0">
+            <TextBlock Text="Title:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding PackName, Mode=TwoWay}" />
+
+            <TextBlock Grid.Row="1" Text="Author:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,4,0,0" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Author, Mode=TwoWay}" Margin="0,4,0,0" />
+
+            <TextBlock Grid.Row="2" Text="Description: " Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,4,0,0" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Description, Mode=TwoWay}" AcceptsReturn="True" MinHeight="60" Margin="0,4,0,0" />
+          </Grid>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+          <TextBlock Grid.ColumnSpan="2" Text="In-Game Info (sys.yml)" Foreground="{StaticResource TextSecondaryBrush}" />
+
+          <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <Button Content="Set Per Language" Command="{Binding TogglePerLanguageCommand}" Background="#1d222b" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" />
+          </StackPanel>
+
+          <!-- Single-language fields (hidden when per-language enabled) -->
+          <Grid Grid.Row="2" Grid.ColumnSpan="2" IsVisible="{Binding UseSingleLanguage}" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" Margin="0,8,0,0">
+            <TextBlock Text="Pack Name:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding PackName, Mode=TwoWay}" />
+
+            <TextBlock Grid.Row="1" Text="Width:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PackNameWidth, Mode=TwoWay}" Watermark="(auto)" Margin="0,6,0,0" />
+
+            <TextBlock Grid.Row="2" Text="Description:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,6,0,0" />
+            <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Description, Mode=TwoWay}" AcceptsReturn="True" MinHeight="60" Margin="0,6,0,0" />
+          </Grid>
+
+          <!-- Per-language editor -->
+          <Border Grid.Row="3" Grid.ColumnSpan="2" Background="Transparent" IsVisible="{Binding UsePerLanguage}" Margin="0,8,0,0">
+            <Grid ColumnDefinitions="Auto,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+              <TextBlock Grid.ColumnSpan="3" Text="Per-Language (sys.yml)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6" />
+
+              <TextBlock Grid.Row="1" Grid.Column="1" Text="Pack Name" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6" />
+              <TextBlock Grid.Row="1" Grid.Column="2" Text="Description" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6" />
+
+              <TextBlock Grid.Row="2" Text="EN:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PackNameEn, Mode=TwoWay}" />
+              <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding DescriptionEn, Mode=TwoWay}" />
+
+              <TextBlock Grid.Row="3" Text="IT:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding PackNameIt, Mode=TwoWay}" Margin="0,6,0,0" />
+              <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding DescriptionIt, Mode=TwoWay}" Margin="0,6,0,0" />
+
+              <TextBlock Grid.Row="4" Text="GR:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding PackNameGr, Mode=TwoWay}" Margin="0,6,0,0" />
+              <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding DescriptionGr, Mode=TwoWay}" Margin="0,6,0,0" />
+
+              <TextBlock Grid.Row="5" Text="FR:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding PackNameFr, Mode=TwoWay}" Margin="0,6,0,0" />
+              <TextBox Grid.Row="5" Grid.Column="2" Text="{Binding DescriptionFr, Mode=TwoWay}" Margin="0,6,0,0" />
+
+              <TextBlock Grid.Row="6" Text="SP:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding PackNameSp, Mode=TwoWay}" Margin="0,6,0,0" />
+              <TextBox Grid.Row="6" Grid.Column="2" Text="{Binding DescriptionSp, Mode=TwoWay}" Margin="0,6,0,0" />
+            </Grid>
+          </Border>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Bottom action bar -->
+    <Border Grid.Row="3" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="10" Margin="0,12,0,0">
+      <DockPanel LastChildFill="False">
+        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="10">
+          <Button Content="Open Music Pack..." Command="{Binding OpenMusicPackCommand}" Background="#1d222b" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Padding="14,7" />
+          <Button Content="Clear All Assignments" Command="{Binding ClearAllAssignmentsCommand}" Background="#1d222b" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Padding="14,7" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
+          <Button Content="Cancel" Click="Cancel_Click" Background="#1d222b" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Padding="14,7" />
+          <Button Content="Export Music Pack" Command="{Binding ExportZipCommand}" IsEnabled="{Binding !IsBusy}" Background="{StaticResource AccentBrush}" Foreground="White" Padding="14,7" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+  </Grid>
+</Window>

@@ -1,0 +1,69 @@
+# SCDToolkit2 (Avalonia/.NET) Git Ignore
+# Keep this repo clean: ignore build outputs, IDE junk, and legacy/reference folders.
+
+########################################
+# OS / Editor
+########################################
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.lnk
+
+########################################
+# Visual Studio / Rider / VS Code
+########################################
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+_ReSharper*/
+*.DotSettings.user
+.vscode/
+
+########################################
+# .NET build outputs
+########################################
+**/bin/
+**/obj/
+**/out/
+**/artifacts/
+**/TestResults/
+*.nupkg
+*.snupkg
+
+# ffmpeg ships its executable under a real "bin" folder; do NOT ignore it
+!SCDToolkit.Desktop/ffmpeg/
+!SCDToolkit.Desktop/ffmpeg/bin/
+!SCDToolkit.Desktop/ffmpeg/bin/**
+
+# Publish / packaging outputs
+**/publish/
+**/Publish/
+**/*.publishproj
+
+########################################
+# Logs / temp
+########################################
+*.log
+*.tmp
+*.temp
+*.bak
+*.old
+*.cache
+
+########################################
+# Local app/runtime data (dev)
+########################################
+scdtoolkit_config.json
+
+
+# Repo-local docs/reference assets not required by the app
+errors/
+doc/
+
+# Scratch / one-off scripts
+*.csx
+

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SCDToolkit.Core/SCDToolkit.Core.csproj" />
+  <Project Path="SCDToolkit.Desktop/SCDToolkit.Desktop.csproj" />
+  <Project Path="SCDToolkit.Updater/SCDToolkit.Updater.csproj" />
+</Solution>

@@ -1,0 +1,593 @@
+<Window xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:SCDToolkit.Desktop.ViewModels"
+  xmlns:conv="clr-namespace:SCDToolkit.Desktop.Converters"
+        x:Class="SCDToolkit.Desktop.Views.MainWindow"
+        x:Name="RootWindow"
+        x:DataType="vm:MainViewModel"
+        Title="SCD Toolkit"
+  Icon="avares://SCDToolkit.Desktop/Assets/icon.ico"
+        Width="1400"
+        Height="900"
+        MinWidth="900"
+        MinHeight="900"
+        CanResize="True"
+          Background="#0b0c0f"
+          mc:Ignorable="d">
+    <Window.Resources>
+      <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6" />
+      <Color x:Key="SystemAccentColor">#3B82F6</Color>
+      <SolidColorBrush x:Key="SystemAccentColorBrush" Color="#3B82F6" />
+      <SolidColorBrush x:Key="PanelBrush" Color="#111214" />
+      <SolidColorBrush x:Key="CardBrush" Color="#15171b" />
+      <SolidColorBrush x:Key="BorderBrush" Color="#1f2229" />
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="#e8eaee" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="#a8abb2" />
+      <conv:LoopMarkerOffsetConverter x:Key="LoopMarkerOffsetConverter" />
+      <conv:LoopMarkersVisibleConverter x:Key="LoopMarkersVisibleConverter" />
+      <conv:BoolToAngleConverter x:Key="BoolToAngleConverter" />
+      <conv:BoolToDoubleConverter x:Key="BoolToDoubleConverter" />
+    </Window.Resources>
+
+    <Window.Styles>
+      <!-- Playback slider: custom template so the thumb is ALWAYS a thin bar by default (not theme-dependent). -->
+      <Style Selector="#PositionSlider" x:SetterTargetType="Slider">
+        <Setter Property="Template">
+          <ControlTemplate TargetType="Slider">
+            <Grid>
+              <Track Name="PART_Track"
+                     Minimum="{TemplateBinding Minimum}"
+                     Maximum="{TemplateBinding Maximum}"
+                     Value="{TemplateBinding Value}"
+                     Orientation="{TemplateBinding Orientation}"
+                     IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                <Track.DecreaseButton>
+                  <RepeatButton Name="PART_DecreaseButton" Background="Transparent" BorderThickness="0">
+                    <Border Background="{StaticResource AccentBrush}" Height="4" CornerRadius="2" VerticalAlignment="Center" />
+                  </RepeatButton>
+                </Track.DecreaseButton>
+                <Track.IncreaseButton>
+                  <RepeatButton Name="PART_IncreaseButton" Background="Transparent" BorderThickness="0">
+                    <Border Background="#263042" Height="4" CornerRadius="2" VerticalAlignment="Center" />
+                  </RepeatButton>
+                </Track.IncreaseButton>
+                <Track.Thumb>
+                  <Thumb Name="PART_Thumb" Width="3" Height="22" Background="{StaticResource AccentBrush}" CornerRadius="0">
+                    <Thumb.Transitions>
+                      <Transitions>
+                        <DoubleTransition Property="Width" Duration="0:0:0.12" />
+                        <DoubleTransition Property="Height" Duration="0:0:0.12" />
+                      </Transitions>
+                    </Thumb.Transitions>
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="Thumb">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                BorderBrush="Transparent"
+                                BorderThickness="0" />
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter>
+      </Style>
+      <Style Selector="#PositionSlider /template/ Thumb#PART_Thumb:pointerover" x:SetterTargetType="Thumb">
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="CornerRadius" Value="3" />
+      </Style>
+
+      <!-- Only toggle buttons explicitly marked should get the accent checked background -->
+      <Style Selector="ToggleButton.AccentToggle:checked" x:SetterTargetType="ToggleButton">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+      </Style>
+
+      <!-- Folder expand toggle: never show a checked background (avoid the blue square). -->
+      <Style Selector="ToggleButton.FolderExpandToggle" x:SetterTargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+          <ControlTemplate TargetType="ToggleButton">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+          </ControlTemplate>
+        </Setter>
+      </Style>
+      <Style Selector="ToggleButton.FolderExpandToggle:checked" x:SetterTargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent" />
+      </Style>
+
+      <!-- Folder header row: clickable, with subtle hover background; no checked visuals -->
+      <Style Selector="ToggleButton.FolderHeaderToggle" x:SetterTargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+          <ControlTemplate TargetType="ToggleButton">
+            <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+              <ContentPresenter Content="{TemplateBinding Content}" />
+            </Border>
+          </ControlTemplate>
+        </Setter>
+      </Style>
+      <Style Selector="ToggleButton.FolderHeaderToggle:pointerover" x:SetterTargetType="ToggleButton">
+        <Setter Property="Background" Value="#1a202b" />
+      </Style>
+    </Window.Styles>
+        <DockPanel LastChildFill="True">
+          <Menu DockPanel.Dock="Top" Background="#0f1218" BorderBrush="#1f2229" BorderThickness="0 0 0 1">
+            <MenuItem Header="Import Legacy Config..." Command="{Binding ImportLegacyConfigCommand}" />
+            <MenuItem Header="Log">
+              <MenuItem Header="View Log File" Command="{Binding ViewLogFileCommand}" />
+              <Separator />
+              <MenuItem Header="Open Log File" Command="{Binding OpenLogFileCommand}" />
+            </MenuItem>
+            <MenuItem Header="Help">
+              <MenuItem Header="Help Guide" Command="{Binding OpenHelpGuideCommand}" />
+              <Separator />
+              <MenuItem Header="Check for Updates" Command="{Binding CheckForUpdatesCommand}" />
+            </MenuItem>
+            <MenuItem Header="Support on Ko-fi ☕" Command="{Binding OpenKofiCommand}" />
+            <MenuItem Header="Join Discord" Command="{Binding OpenDiscordCommand}" />
+          </Menu>
+
+          <Grid ColumnDefinitions="360,*" RowDefinitions="*">
+    <!-- Left: transport + file pane -->
+    <Border Background="{StaticResource PanelBrush}" Padding="16" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0 0 1 0">
+      <StackPanel Spacing="12">
+        <StackPanel Spacing="4" Margin="0,0,0,4">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding NowPlayingTitle}" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+              <TextBlock Text="{Binding PositionText}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+              <TextBlock Text="/" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+              <TextBlock Text="{Binding DurationText}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Text="{Binding NowPlayingInfo}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+
+        <Grid Margin="0,6,0,10" Height="36">
+          <Slider x:Name="PositionSlider"
+            Minimum="0"
+            Maximum="{Binding DurationSeconds}"
+            Value="{Binding PositionSeconds, Mode=TwoWay}"
+            Height="36"
+            VerticalAlignment="Center"
+            Foreground="{StaticResource AccentBrush}"
+            />
+          <Canvas IsHitTestVisible="False" Height="36" VerticalAlignment="Center">
+            <Canvas.IsVisible>
+              <MultiBinding Converter="{StaticResource LoopMarkersVisibleConverter}">
+                <Binding Path="LoopStart" />
+                <Binding Path="LoopEnd" />
+              </MultiBinding>
+            </Canvas.IsVisible>
+            <Rectangle Width="2" Height="12" Fill="#32c56d" Canvas.Top="12">
+              <Rectangle.RenderTransform>
+                <TranslateTransform>
+                  <TranslateTransform.X>
+                    <MultiBinding Converter="{StaticResource LoopMarkerOffsetConverter}">
+                      <Binding Path="LoopStartSeconds" />
+                      <Binding Path="DurationSeconds" />
+                      <Binding ElementName="PositionSlider" Path="Bounds.Width" />
+                    </MultiBinding>
+                  </TranslateTransform.X>
+                </TranslateTransform>
+              </Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle Width="2" Height="12" Fill="#d95b5b" Canvas.Top="12">
+              <Rectangle.RenderTransform>
+                <TranslateTransform>
+                  <TranslateTransform.X>
+                    <MultiBinding Converter="{StaticResource LoopMarkerOffsetConverter}">
+                      <Binding Path="LoopEndSeconds" />
+                      <Binding Path="DurationSeconds" />
+                      <Binding ElementName="PositionSlider" Path="Bounds.Width" />
+                    </MultiBinding>
+                  </TranslateTransform.X>
+                </TranslateTransform>
+              </Rectangle.RenderTransform>
+            </Rectangle>
+          </Canvas>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+          <Button Command="{Binding PrevCommand}" Width="40" Height="40" Padding="0" Background="Transparent" BorderThickness="0">
+            <PathIcon Data="M11,6 L6,12 L11,18 M18,6 L13,12 L18,18" Width="20" Height="20" Foreground="{StaticResource TextPrimaryBrush}" />
+          </Button>
+          <Button Command="{Binding TogglePlayPauseCommand}" Width="40" Height="40" Padding="0" Background="Transparent" BorderThickness="0">
+            <PathIcon Data="{Binding PlayPauseIconData}" Width="20" Height="20" Foreground="{StaticResource TextPrimaryBrush}" />
+          </Button>
+          <Button Command="{Binding NextCommand}" Width="40" Height="40" Padding="0" Background="Transparent" BorderThickness="0">
+            <PathIcon Data="M13,6 L18,12 L13,18 M6,6 L11,12 L6,18" Width="20" Height="20" Foreground="{StaticResource TextPrimaryBrush}" />
+          </Button>
+          <ToggleButton Classes="AccentToggle" IsChecked="{Binding LoopEnabled}" Width="40" Height="40" Padding="0" Background="Transparent" BorderThickness="0">
+            <PathIcon Data="M17,17 L7,17 L7,14 L3,18 L7,22 L7,19 L19,19 L19,13 L17,13 M7,7 L17,7 L17,10 L21,6 L17,2 L17,5 L5,5 L5,11 L7,11" Width="20" Height="20" Foreground="{StaticResource TextPrimaryBrush}" />
+          </ToggleButton>
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="8,0,0,0">
+            <PathIcon Data="M3,9 L3,15 L7,15 L12,20 L12,4 L7,9 M13,9 Q16,12 13,15" Width="18" Height="18" Foreground="{StaticResource TextSecondaryBrush}" />
+            <Slider Minimum="0" Maximum="1" Value="{Binding Volume, Mode=TwoWay}" Width="100" Foreground="{StaticResource AccentBrush}" />
+          </StackPanel>
+        </StackPanel>
+
+        <Border Background="#0f1218" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Now Playing Info" Foreground="{StaticResource TextSecondaryBrush}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding NowPlayingTitle, StringFormat='File: {0}', TargetNullValue='No file loaded'}" Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Sample Rate:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+              <TextBlock Text="{Binding SampleRate, StringFormat='{}{0:N0} Hz'}" Foreground="{StaticResource TextPrimaryBrush}" FontSize="11" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Channels:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+              <TextBlock Text="{Binding Channels}" Foreground="{StaticResource TextPrimaryBrush}" FontSize="11" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="Duration:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+              <TextBlock Text="{Binding DurationText}" Foreground="{StaticResource TextPrimaryBrush}" FontSize="11" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+              <TextBlock Text="Loop:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="Medium" />
+              <TextBlock Text="{Binding LoopInfo}" Foreground="#60a5fa" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <!-- Right: library and actions -->
+    <Grid Grid.Column="1" RowDefinitions="Auto,*" Background="#0b0c0f" Margin="12">
+
+      <!-- Scan folders + toggles -->
+      <Grid Grid.Row="0" RowDefinitions="Auto,Auto,*" Margin="0,10,0,0">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+          <TextBlock Grid.Column="0" Text="Scan Folders" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <CheckBox Grid.Column="1" Content="Scan subdirectories" IsChecked="{Binding ScanSubdirectories}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="12,0,0,0" />
+          <CheckBox Grid.Column="2" Content="Group by folder" IsChecked="{Binding GroupByFolder}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="12,0,0,0" />
+          <Border Grid.Column="3" />
+          <Button Grid.Column="4" Command="{Binding AddFolderCommand}" ToolTip.Tip="Add folder" Background="Transparent" BorderThickness="0" Padding="6">
+            <PathIcon Data="M10,4 L14,4 L14,10 L20,10 L20,14 L14,14 L14,20 L10,20 L10,14 L4,14 L4,10 L10,10 Z" Width="18" Height="18" Foreground="{StaticResource AccentBrush}" />
+          </Button>
+          <Button Grid.Column="5" Command="{Binding RemoveFolderCommand}" ToolTip.Tip="Remove folder" Background="Transparent" BorderThickness="0" Padding="6">
+            <PathIcon Data="M4,10 L20,10 L20,14 L4,14 Z" Width="18" Height="18" Foreground="{StaticResource AccentBrush}" />
+          </Button>
+          <Button Grid.Column="6" Command="{Binding RescanCommand}" ToolTip.Tip="Rescan" Background="Transparent" BorderThickness="0" Padding="6" IsEnabled="{Binding !IsRescanning}">
+            <PathIcon Data="M17.65,6.35A7.95,7.95 0 0,0 12,4V1L7,6L12,11V7A5,5 0 1,1 7,12H5A7,7 0 1,0 19,12A6.97,6.97 0 0,0 17.65,6.35Z" Width="18" Height="18" Foreground="{StaticResource AccentBrush}" />
+          </Button>
+        </Grid>
+
+        <ProgressBar Grid.Row="1"
+                     IsIndeterminate="True"
+                     Height="3"
+                     Margin="0,0,0,8"
+                     Foreground="{StaticResource AccentBrush}"
+                     Background="#263042"
+                     IsVisible="{Binding IsRescanning}" />
+
+        <ListBox Grid.Row="2" ItemsSource="{Binding ScanFolders}" SelectedItem="{Binding SelectedScanFolder}" Background="Transparent" BorderThickness="0" MaxHeight="150">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="8" />
+              <Setter Property="Margin" Value="0,2" />
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+              <Setter Property="Background" Value="#2d4a7b" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding .}" Foreground="{StaticResource TextPrimaryBrush}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+
+      <!-- Library content -->
+      <Grid Grid.Row="1" RowDefinitions="Auto,*,Auto" Margin="0,12,0,0">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" VerticalAlignment="Center">
+          <TextBlock Grid.Column="0" Text="SCDHook" Foreground="{Binding ScdHookIndicatorBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="Field:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="2" Margin="6,0,0,0" Text="{Binding ScdHookQueuedFieldName}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="14,0,0,0">
+            <TextBlock Text="Battle:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ScdHookQueuedBattleName}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <Button Content="Apply" Command="{Binding ApplySCDHookCommand}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="28" Padding="10,4" VerticalContentAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <Button Content="Filter" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="28" Padding="10,4" VerticalContentAlignment="Center">
+              <Button.Flyout>
+                <Flyout Placement="Bottom">
+                  <Border Background="#0f1218" BorderBrush="#2b303a" BorderThickness="1" CornerRadius="8" Padding="10" MinWidth="220">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="File types" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+                      <ItemsControl ItemsSource="{Binding FileTypeFilters}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="vm:FileTypeFilterOptionViewModel">
+                            <CheckBox IsChecked="{Binding IsChecked}" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding DisplayName}" />
+                                <TextBlock Text="{Binding Count, StringFormat='({0})'}" Foreground="{StaticResource TextSecondaryBrush}" />
+                              </StackPanel>
+                            </CheckBox>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <TextBlock Text="{Binding FileTypeFilterSummary, StringFormat='Showing: {0}'}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+                    </StackPanel>
+                  </Border>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <TextBlock Text="Search:" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+            <TextBox Width="260" Text="{Binding SearchText}" Watermark="Search files..." />
+            <Button Content="KH Rando" Command="{Binding ToggleKhRandoCommand}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="28" Padding="10,4" VerticalContentAlignment="Center" />
+          </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="1" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,8,0,0">
+          <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,Auto">
+            <Grid Grid.Row="0" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+              <TextBlock Grid.Column="0" Text="Audio Files" Foreground="{StaticResource TextSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding KhRandoStatus}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            </Grid>
+
+            <!-- Main library column -->
+            <Grid Grid.Row="1" Grid.Column="0">
+              <!-- Flat list view (when not grouped) -->
+              <ListBox
+                       ItemsSource="{Binding LibraryItems}" 
+                       SelectedItem="{Binding SelectedItem}" 
+                       SelectionMode="Multiple"
+                       SelectionChanged="OnFlatListSelectionChanged"
+                       DoubleTapped="OnLibraryDoubleTapped"
+                       IsVisible="{Binding !GroupByFolder}">
+              <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                  <Setter Property="Padding" Value="6,4" />
+                  <Setter Property="Margin" Value="0,1" />
+                </Style>
+                <Style Selector="ListBoxItem /template/ ContentPresenter">
+                  <Setter Property="Background" Value="Transparent" />
+                  <Setter Property="BorderBrush" Value="Transparent" />
+                  <Setter Property="BorderThickness" Value="0" />
+                </Style>
+                <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                  <Setter Property="Background" Value="Transparent" />
+                  <Setter Property="BorderBrush" Value="Transparent" />
+                  <Setter Property="BorderThickness" Value="0" />
+                </Style>
+                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                  <Setter Property="Background" Value="#2f5aa7" />
+                </Style>
+              </ListBox.Styles>
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <!-- Put context menu on the full row so right-click works anywhere, not just on text -->
+                  <Border Background="Transparent" HorizontalAlignment="Stretch" Padding="0"
+                          PointerPressed="OnLibraryRowPointerPressed"
+                          PointerMoved="OnLibraryRowPointerMoved">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="Open Loop Editor" Command="{ReflectionBinding DataContext.OpenLoopEditorItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Normalize..." Command="{ReflectionBinding DataContext.QuickNormalizeItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Open file location" Command="{ReflectionBinding DataContext.OpenFileLocationItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Delete" Command="{ReflectionBinding DataContext.DeleteItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                        <Separator />
+                        <MenuItem Header="Convert">
+                          <MenuItem Header="Convert to SCD" IsEnabled="{Binding CanConvertToScdAny}" Command="{ReflectionBinding DataContext.ConvertToScdItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Convert to WAV" IsEnabled="{Binding CanConvertToWavAny}" Command="{ReflectionBinding DataContext.ConvertToWavItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="SCDHook">
+                          <MenuItem Header="Queue Field" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueFieldCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Queue &amp; Play Field" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueAndPlayFieldCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Queue Battle" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueBattleCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                          <MenuItem Header="Queue &amp; Play Battle" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueAndPlayBattleCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                        </MenuItem>
+                      </ContextMenu>
+                    </Border.ContextMenu>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding Details}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+              <!-- Grouped view (flat per folder, same list look; no nested tree, no cards) -->
+              <ScrollViewer IsVisible="{Binding GroupByFolder}">
+                <ItemsControl ItemsSource="{Binding FolderGroups}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:FolderGroupViewModel">
+                      <StackPanel Margin="0,0,0,6">
+                        <!-- Folder header: clickable row toggles expand/collapse -->
+                        <ToggleButton Classes="FolderHeaderToggle" IsChecked="{Binding IsExpanded}" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                          <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
+                            <!-- Triangle-style expand indicator -->
+                            <PathIcon Grid.Column="0" Width="16" Height="16" Foreground="{StaticResource TextSecondaryBrush}" Data="M6,4 L14,10 L6,16 Z">
+                              <PathIcon.RenderTransform>
+                                <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" CenterX="10" CenterY="10" />
+                              </PathIcon.RenderTransform>
+                            </PathIcon>
+                            <PathIcon Grid.Column="1" Margin="6,0,0,0" Data="M10,4 L4,4 L4,20 L20,20 L20,8 L11,8 Z M10,4 L11,8" Width="16" Height="16" Foreground="#93c5fd" />
+                            <TextBlock Grid.Column="2" Margin="8,0,0,0" Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="3" Margin="6,0,0,0" Text="{Binding ItemCount, StringFormat='({0})'}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
+                          </Grid>
+                        </ToggleButton>
+
+                        <Border Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="6,4"
+                                ClipToBounds="True"
+                                MaxHeight="{Binding IsExpanded, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='5000|0'}"
+                                Opacity="{Binding IsExpanded, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1|0'}"
+                                IsHitTestVisible="{Binding IsExpanded}">
+                          <Border.Transitions>
+                            <Transitions>
+                              <DoubleTransition Property="MaxHeight" Duration="0:0:0.14" />
+                              <DoubleTransition Property="Opacity" Duration="0:0:0.14" />
+                            </Transitions>
+                          </Border.Transitions>
+                          <ListBox Classes="GroupedItemsList" ItemsSource="{Binding Items}"
+                                   SelectionMode="Multiple"
+                                   SelectionChanged="OnGroupedListSelectionChanged"
+                                   DoubleTapped="OnLibraryDoubleTapped"
+                                   Background="Transparent" BorderThickness="0">
+                            <ListBox.Styles>
+                              <Style Selector="ListBoxItem">
+                                <!-- Indent file rows under the folder header -->
+                                <Setter Property="Padding" Value="28,4,6,4" />
+                                <Setter Property="Margin" Value="0,1" />
+                              </Style>
+                              <Style Selector="ListBoxItem /template/ ContentPresenter">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                              </Style>
+                              <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                              </Style>
+                              <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#2f5aa7" />
+                              </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                              <DataTemplate DataType="vm:LibraryItemViewModel">
+                                <Border Background="Transparent" HorizontalAlignment="Stretch" Padding="0"
+                                        PointerPressed="OnLibraryRowPointerPressed"
+                                        PointerMoved="OnLibraryRowPointerMoved">
+                                  <Border.ContextMenu>
+                                    <ContextMenu>
+                                      <MenuItem Header="Open Loop Editor" Command="{ReflectionBinding DataContext.OpenLoopEditorItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                      <MenuItem Header="Normalize..." Command="{ReflectionBinding DataContext.QuickNormalizeItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                      <MenuItem Header="Open file location" Command="{ReflectionBinding DataContext.OpenFileLocationItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                      <MenuItem Header="Delete" Command="{ReflectionBinding DataContext.DeleteItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                      <Separator />
+                                      <MenuItem Header="Convert">
+                                        <MenuItem Header="Convert to SCD" IsEnabled="{Binding CanConvertToScdAny}" Command="{ReflectionBinding DataContext.ConvertToScdItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                        <MenuItem Header="Convert to WAV" IsEnabled="{Binding CanConvertToWavAny}" Command="{ReflectionBinding DataContext.ConvertToWavItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                      </MenuItem>
+                                      <Separator />
+                                      <MenuItem Header="SCDHook">
+                                        <MenuItem Header="Queue Field" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueFieldCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                        <MenuItem Header="Queue &amp; Play Field" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueAndPlayFieldCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                        <MenuItem Header="Queue Battle" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueBattleCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                        <MenuItem Header="Queue &amp; Play Battle" IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.QueueAndPlayBattleCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                      </MenuItem>
+                                    </ContextMenu>
+                                  </Border.ContextMenu>
+                                  <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" />
+                                    <TextBlock Text="{Binding Details}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+                                  </StackPanel>
+                                </Border>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+                        </Border>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Grid>
+
+            <!-- KH Rando panel (animated show/hide) -->
+            <Border Grid.Row="1" Grid.Column="1" Background="#0f1218" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="10,0,0,0" Width="{Binding KhRandoPanelWidth}">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Width" Duration="0:0:0.18" />
+                  <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                </Transitions>
+              </Border.Transitions>
+              <Border.Opacity>1</Border.Opacity>
+              <StackPanel Spacing="8" IsVisible="{Binding ShowKhRando}">
+                <TextBlock Text="KH Randomizer Export" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Set music folder" Command="{Binding AddRandoFolderCommand}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="28" Padding="10,4" />
+                  <Button Content="Clear" Command="{Binding ClearRandoFolderCommand}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="28" Padding="10,4" />
+                </StackPanel>
+                <TextBlock Text="{Binding KhRandoMusicFolder, TargetNullValue='(no folder set)'}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="Folders" Foreground="{StaticResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0" />
+                <ScrollViewer Height="280">
+                  <ItemsControl ItemsSource="{Binding KhRandoFolderGroups}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:RandoFolderGroupViewModel">
+                        <StackPanel Margin="0,0,0,6">
+                          <ToggleButton Classes="FolderHeaderToggle" IsChecked="{Binding IsExpanded}" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                        Command="{ReflectionBinding DataContext.SelectKhRandoFolderCommand, ElementName=RootWindow}" CommandParameter="{Binding}"
+                                        DragDrop.AllowDrop="True"
+                                        AttachedToVisualTree="OnRandoFolderAttachedToVisualTree">
+                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
+                              <PathIcon Grid.Column="0" Width="16" Height="16" Foreground="{StaticResource TextSecondaryBrush}" Data="M6,4 L14,10 L6,16 Z">
+                                <PathIcon.RenderTransform>
+                                  <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" CenterX="10" CenterY="10" />
+                                </PathIcon.RenderTransform>
+                              </PathIcon>
+                              <PathIcon Grid.Column="1" Margin="6,0,0,0" Data="M10,4 L4,4 L4,20 L20,20 L20,8 L11,8 Z M10,4 L11,8" Width="16" Height="16" Foreground="#93c5fd" />
+                              <TextBlock Grid.Column="2" Margin="8,0,0,0" Text="{Binding DisplayName}" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                              <TextBlock Grid.Column="3" Margin="6,0,0,0" Text="{Binding ItemCount, StringFormat='({0})'}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
+                              <PathIcon Grid.Column="4" HorizontalAlignment="Right" Width="16" Height="16" Foreground="#32c56d" Data="M9,16 L4,11 L5.4,9.6 L9,13.2 L18.6,3.6 L20,5 Z" IsVisible="{Binding IsSelected}" />
+                            </Grid>
+                          </ToggleButton>
+
+                          <Border Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="6,4"
+                                  ClipToBounds="True"
+                                  MaxHeight="{Binding IsExpanded, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='5000|0'}"
+                                  Opacity="{Binding IsExpanded, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1|0'}"
+                                  IsHitTestVisible="{Binding IsExpanded}">
+                            <Border.Transitions>
+                              <Transitions>
+                                <DoubleTransition Property="MaxHeight" Duration="0:0:0.14" />
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.14" />
+                              </Transitions>
+                            </Border.Transitions>
+                            <ItemsControl ItemsSource="{Binding Files}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                  <TextBlock Text="{Binding}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="28,2,0,2" TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </Border>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <Button Content="Export selected .scd → category" Command="{Binding ExportSelectedToRandoCommand}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="34" HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          </Border>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,Auto" Margin="0,12,0,0">
+          <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*,*" HorizontalAlignment="Stretch">
+            <Button Grid.Column="0" Content="Delete (Del)" Command="{Binding DeleteSelectedCommand}" IsEnabled="{Binding HasSelectedItem}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="38" HorizontalAlignment="Stretch" Margin="0,0,8,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+            <Button Grid.Column="1" Content="Loop Editor (L)" Command="{Binding OpenLoopEditorCommand}" IsEnabled="{Binding HasSelectedItem}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="38" HorizontalAlignment="Stretch" Margin="0,0,8,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+            <Button Grid.Column="2" Content="Normalize (N)" Command="{Binding OpenNormalizeCommand}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="38" HorizontalAlignment="Stretch" Margin="0,0,8,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+            <Button Grid.Column="3" Content="Convert to SCD (S)" Command="{Binding ConvertToScdCommand}" IsEnabled="{Binding CanConvertToScd}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="38" HorizontalAlignment="Stretch" Margin="0,0,8,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+            <Button Grid.Column="4" Content="Convert to WAV (W)" Command="{Binding ConvertToWavCommand}" IsEnabled="{Binding CanConvertToWav}" Background="#1d222b" BorderBrush="#2b303a" BorderThickness="1" Foreground="{StaticResource TextPrimaryBrush}" Height="38" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+          </Grid>
+
+          <Button Grid.Row="1" Content="Create Kingdom Hearts II - Re:Fined Music Pack" Command="{Binding OpenMusicPackCreatorCommand}" Background="#16a34a" Foreground="White" Height="46" HorizontalAlignment="Stretch" Margin="0,10,0,0" FontWeight="SemiBold" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+        </Grid>
+      </Grid>
+          </Grid>
+          </Grid>
+        </DockPanel>
+</Window>

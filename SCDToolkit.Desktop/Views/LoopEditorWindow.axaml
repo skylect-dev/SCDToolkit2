@@ -1,0 +1,155 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:SCDToolkit.Desktop.ViewModels"
+        xmlns:controls="clr-namespace:SCDToolkit.Desktop.Controls"
+        x:Class="SCDToolkit.Desktop.Views.LoopEditorWindow"
+        x:DataType="vm:LoopEditorViewModel"
+        Title="{Binding Title}"
+        Icon="avares://SCDToolkit.Desktop/Assets/icon.ico"
+        Width="1400"
+        Height="900"
+        MinWidth="900"
+        MinHeight="900"
+        Background="#0b0c0f"
+        CanResize="True"
+        mc:Ignorable="d">
+  <Window.Resources>
+    <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#111214" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#1f2229" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#e8eaee" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#a8abb2" />
+  </Window.Resources>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16" Background="#0b0c0f" ColumnDefinitions="*">
+    <!-- Header -->
+    <StackPanel Orientation="Vertical" Spacing="2" Margin="2,0,2,6">
+      <TextBlock Text="Loop Editor" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
+      <TextBlock Text="Adjust loop points with sample precision for WAV and SCD files." Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+      <TextBlock Text="{Binding FileName}" Foreground="{StaticResource TextPrimaryBrush}" FontSize="14" FontWeight="Medium" />
+    </StackPanel>
+
+    <!-- Waveform section -->
+    <Border Grid.Row="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,0,0,10">
+      <ScrollViewer x:Name="WaveformScroller" Height="150" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <controls:WaveformView x:Name="WaveformView"
+                               Waveform="{Binding Waveform}"
+                               LoopStart="{Binding LoopStart, Mode=TwoWay}"
+                               LoopEnd="{Binding LoopEnd, Mode=TwoWay}"
+                               SampleRate="{Binding SampleRate}"
+                               SamplesPerPixel="{Binding SamplesPerPixel, Mode=TwoWay}"
+                               ViewStartSample="{Binding ViewStartSample, Mode=TwoWay}"
+                               PlayheadSample="{Binding PlayheadSample}"
+                               Height="150"
+                               MinWidth="{Binding #WaveformScroller.Bounds.Width}"
+                               Width="{Binding WaveformPixelWidth}"
+                               Background="#0f1116"
+                               Margin="4" />
+      </ScrollViewer>
+    </Border>
+
+    <!-- Playback controls bar -->
+    <Border Grid.Row="2" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10" Height="72" VerticalAlignment="Top">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*" VerticalAlignment="Center">
+        <Button Grid.Column="0" Content="{Binding PreviewPlayPauseLabel}" Width="100" Height="36" Margin="0,0,8,0" Command="{Binding TogglePreviewPlayPauseCommand}" />
+        <Button Grid.Column="1" Content="Stop" Width="80" Height="36" Margin="0,0,8,0" Command="{Binding StopPreviewAndResetCommand}" />
+        <ToggleButton Grid.Column="2" Content="Loop" Width="80" Height="36" IsChecked="{Binding LoopPreviewEnabled, Mode=TwoWay}" />
+        <TextBlock Grid.Column="3" Text="{Binding Status}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <!-- Bottom region -->
+    <Grid Grid.Row="3" ColumnDefinitions="2*,2*,1*" RowDefinitions="Auto">
+      <!-- Loop point controls -->
+      <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,8,0">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Loop Point Controls" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+
+          <StackPanel Spacing="2">
+            <TextBlock Text="Hotkeys:" Foreground="{StaticResource TextSecondaryBrush}" FontStyle="Italic" />
+            <TextBlock Text="S: Set loop start at cursor" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+            <TextBlock Text="E: Set loop end at cursor" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+            <TextBlock Text="C: Clear loop points" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+            <TextBlock Text="Space: Play/Pause" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+            <TextBlock Text="L: Toggle loop playback" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+            <TextBlock Text="Ctrl+drag: Fine marker control" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+          </StackPanel>
+
+          <StackPanel Spacing="10">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Loop Start (samples)" Foreground="{StaticResource TextSecondaryBrush}" />
+              <NumericUpDown Minimum="0"
+                            Maximum="{Binding TotalSamples}"
+                            Value="{Binding LoopStart, Mode=TwoWay}"
+                            Increment="1"
+                            Foreground="{StaticResource TextPrimaryBrush}" />
+              <TextBlock Text="{Binding LoopStartTime}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="Loop End (samples)" Foreground="{StaticResource TextSecondaryBrush}" />
+              <NumericUpDown Minimum="0"
+                            Maximum="{Binding TotalSamples}"
+                            Value="{Binding LoopEnd, Mode=TwoWay}"
+                            Increment="1"
+                            Foreground="{StaticResource TextPrimaryBrush}" />
+              <TextBlock Text="{Binding LoopEndTime}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Clear Loop" Command="{Binding ClearLoopPointsCommand}" Width="100" />
+            <TextBlock Text="Duration:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DurationDisplay}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="·" Foreground="{StaticResource TextSecondaryBrush}" Margin="4,0" />
+            <TextBlock Text="{Binding TotalSamplesDisplay}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Audio info / analysis placeholder -->
+      <Border Grid.Column="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,8,0">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Audio Analysis" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+          <TextBlock Text="Sample Rate:" Foreground="{StaticResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding SampleRate, StringFormat='{}{0:N0} Hz'}" Foreground="{StaticResource TextPrimaryBrush}" />
+          <TextBlock Text="Channels:" Foreground="{StaticResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding Channels}" Foreground="{StaticResource TextPrimaryBrush}" />
+          <TextBlock Text="Length:" Foreground="{StaticResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding DurationDisplay}" Foreground="{StaticResource TextPrimaryBrush}" />
+          <TextBlock Text="Total Samples:" Foreground="{StaticResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding TotalSamplesDisplay}" Foreground="{StaticResource TextPrimaryBrush}" />
+
+          <Separator Margin="0,6" />
+
+          <TextBlock Text="Save Options" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+          <CheckBox Content="Normalize on save" IsChecked="{Binding NormalizeOnSave, Mode=TwoWay}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Target LUFS:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <NumericUpDown Width="120" Minimum="-30" Maximum="0" Increment="0.5" Value="{Binding TargetLufs, Mode=TwoWay}" />
+          </StackPanel>
+          <CheckBox Content="Patch SCD volume float on save" IsChecked="{Binding PatchScdVolumeOnSave, Mode=TwoWay}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="SCD volume float:" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+            <NumericUpDown Width="120" Minimum="0" Maximum="4" Increment="0.1" Value="{Binding ScdVolumeFloat, Mode=TwoWay}" />
+          </StackPanel>
+
+          <Separator Margin="0,6" />
+
+          <Button Content="Analyze Audio Levels" Command="{Binding AnalyzeAudioCommand}" Height="32" />
+          <TextBlock Text="{Binding AnalysisStatus}" Foreground="{StaticResource TextSecondaryBrush}" />
+          <TextBlock Text="{Binding AnalysisResult}" Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- Actions -->
+      <Border Grid.Column="2" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
+        <StackPanel Spacing="12" VerticalAlignment="Top">
+          <Button Content="Save Changes" Command="{Binding SaveCommand}" Background="#2563eb" Foreground="White" Height="40" />
+          <Button Content="Cancel" Command="{Binding CloseCommand}" Background="#7f1d1d" Foreground="White" Height="36" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>
