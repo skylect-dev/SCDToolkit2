@@ -383,6 +383,7 @@
                       <ContextMenu>
                         <MenuItem Header="Open Loop Editor" Command="{ReflectionBinding DataContext.OpenLoopEditorItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                         <MenuItem Header="Normalize..." Command="{ReflectionBinding DataContext.QuickNormalizeItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                        <MenuItem Header="Create Title Screen Mod Zip..." IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.CreateTitleScreenModCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                         <MenuItem Header="Open file location" Command="{ReflectionBinding DataContext.OpenFileLocationItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                         <MenuItem Header="Delete" Command="{ReflectionBinding DataContext.DeleteItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                         <Separator />
@@ -474,6 +475,7 @@
                                     <ContextMenu>
                                       <MenuItem Header="Open Loop Editor" Command="{ReflectionBinding DataContext.OpenLoopEditorItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                                       <MenuItem Header="Normalize..." Command="{ReflectionBinding DataContext.QuickNormalizeItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
+                                      <MenuItem Header="Create Title Screen Mod Zip..." IsEnabled="{Binding IsScd}" Command="{ReflectionBinding DataContext.CreateTitleScreenModCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                                       <MenuItem Header="Open file location" Command="{ReflectionBinding DataContext.OpenFileLocationItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                                       <MenuItem Header="Delete" Command="{ReflectionBinding DataContext.DeleteItemCommand, ElementName=RootWindow}" CommandParameter="{Binding}" />
                                       <Separator />

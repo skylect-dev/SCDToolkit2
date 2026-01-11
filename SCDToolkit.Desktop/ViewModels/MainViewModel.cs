@@ -1835,6 +1835,50 @@ namespace SCDToolkit.Desktop.ViewModels
             }
         }
 
+        [RelayCommand]
+        private async Task CreateTitleScreenMod(LibraryItemViewModel? item)
+        {
+            if (item == null) return;
+            if (!item.IsScd) return;
+            if (string.IsNullOrWhiteSpace(item.Path)) return;
+            if (!System.IO.File.Exists(item.Path)) return;
+
+            var window = GetMainWindow();
+            if (window?.StorageProvider == null)
+            {
+                System.Diagnostics.Debug.WriteLine("StorageProvider unavailable");
+                return;
+            }
+
+            var suffix = System.IO.Path.GetFileNameWithoutExtension(item.Path);
+            var saveResult = await window.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                SuggestedFileName = $"Title Screen Music Replacer - {suffix}.zip",
+                DefaultExtension = "zip",
+                FileTypeChoices = new List<FilePickerFileType>
+                {
+                    new FilePickerFileType("Zip") { Patterns = new List<string> { "*.zip" } }
+                }
+            });
+
+            var outputPath = saveResult?.TryGetLocalPath();
+            if (string.IsNullOrWhiteSpace(outputPath)) return;
+
+            if (string.IsNullOrWhiteSpace(System.IO.Path.GetExtension(outputPath)))
+            {
+                outputPath += ".zip";
+            }
+
+            try
+            {
+                new TitleScreenModExporter().Export(item.Path, outputPath);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error creating Title Screen mod zip: {ex.Message}");
+            }
+        }
+
         private static string ResolveVgmstreamPath()
         {
             var baseDir = AppContext.BaseDirectory;
