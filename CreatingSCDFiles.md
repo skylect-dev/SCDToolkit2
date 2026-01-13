@@ -8,7 +8,7 @@ SCDs can be created from most audio formats, but **only wav and SCD are able to 
  
 **Step 1: Download**
 
-- Download SCDToolkit [here](https://github.com/skylect-dev/SCDToolkit/releases/latest).
+- Download SCDToolkit [here](https://github.com/skylect-dev/SCDToolkit2/releases/latest).
 
 
 **Step 2: Extract and Setup**
