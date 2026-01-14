@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -26,6 +28,7 @@ public partial class MusicPackCreatorViewModel : ObservableObject
 
     private readonly ScdParser _scdParser = new();
     private IStorageProvider? _storageProvider;
+    private Window? _owner;
 
     private readonly List<MusicPackTrackViewModel> _subscribedTracks = new();
 
@@ -204,6 +207,11 @@ public partial class MusicPackCreatorViewModel : ObservableObject
     public void AttachStorageProvider(IStorageProvider? storageProvider)
     {
         _storageProvider = storageProvider;
+    }
+
+    public void AttachOwnerWindow(Window? owner)
+    {
+        _owner = owner;
     }
 
     [RelayCommand]
@@ -498,12 +506,14 @@ public partial class MusicPackCreatorViewModel : ObservableObject
                 await _exporter.ExportAsync(request1, prog);
                 await _exporter.ExportAsync(request2, prog);
                 Status = $"Export complete.\n{Path.GetFileName(slot1)}\n{Path.GetFileName(slot2)}";
+                await ShowDialogAsync("Export Complete", $"Music pack exported successfully:\n\n{Path.GetFileName(slot1)}\n{Path.GetFileName(slot2)}");
             }
             else
             {
                 var request = new MusicPackExportRequest(Slot, outputPath, PackName, Author, Description, InGameDescription, PackNameWidth, assignments, packNamesByLang, descByLang);
                 await _exporter.ExportAsync(request, prog);
                 Status = "Export complete.";
+                await ShowDialogAsync("Export Complete", $"Music pack exported successfully:\n\n{Path.GetFileName(outputPath)}");
             }
         }
         catch (Exception ex)
@@ -582,7 +592,7 @@ public partial class MusicPackCreatorViewModel : ObservableObject
                 json = await File.ReadAllTextAsync(path);
             }
 
-            ApplyMapJson(json);
+            await ApplyMapJson(json);
         }
         catch (Exception ex)
         {
@@ -590,7 +600,7 @@ public partial class MusicPackCreatorViewModel : ObservableObject
         }
     }
 
-    private void ApplyMapJson(string json)
+    private async Task ApplyMapJson(string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -668,6 +678,16 @@ public partial class MusicPackCreatorViewModel : ObservableObject
         Status = missing.Count > 0
             ? $"Opened pack. {missing.Count} source files missing on this PC."
             : "Opened pack.";
+
+        if (missing.Count > 0)
+        {
+            var fileList = string.Join("\n", missing.Take(10));
+            if (missing.Count > 10)
+            {
+                fileList += $"\n... and {missing.Count - 10} more";
+            }
+            await ShowDialogAsync("Failed to Load Tracks", $"{missing.Count} source file(s) could not be found on this PC:\n\n{fileList}");
+        }
     }
 
     private static (string slot1, string slot2) DeriveSlot1And2ZipPaths(string baseZipPath)
@@ -724,5 +744,44 @@ public partial class MusicPackCreatorViewModel : ObservableObject
             name = name.Replace(c, '_');
         }
         return name;
+    }
+
+    private async Task ShowDialogAsync(string title, string message)
+    {
+        if (_owner == null) return;
+
+        var tcs = new TaskCompletionSource<bool>();
+        var okButton = new Button { Content = "OK", MinWidth = 80, Foreground = Avalonia.Media.Brushes.White };
+
+        var dialog = new Window
+        {
+            Width = 500,
+            Height = 240,
+            Title = title,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = _owner.Background,
+            Content = new StackPanel
+            {
+                Margin = new Thickness(16),
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Avalonia.Media.Brushes.White },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children = { okButton }
+                    }
+                }
+            }
+        };
+
+        okButton.Click += (_, _) => { tcs.TrySetResult(true); dialog.Close(); };
+        dialog.Closed += (_, _) => tcs.TrySetResult(true);
+
+        await dialog.ShowDialog(_owner);
+        await tcs.Task;
     }
 }

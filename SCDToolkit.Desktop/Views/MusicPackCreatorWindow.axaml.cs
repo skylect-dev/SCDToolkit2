@@ -26,6 +26,7 @@ public partial class MusicPackCreatorWindow : Window
             if (DataContext is MusicPackCreatorViewModel vm)
             {
                 vm.AttachStorageProvider(StorageProvider);
+                vm.AttachOwnerWindow(this);
             }
         };
 
@@ -34,6 +35,7 @@ public partial class MusicPackCreatorWindow : Window
             if (DataContext is MusicPackCreatorViewModel vm)
             {
                 vm.AttachStorageProvider(StorageProvider);
+                vm.AttachOwnerWindow(this);
             }
         };
     }

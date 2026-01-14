@@ -57,7 +57,14 @@ public sealed class MusicPackExporter
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var bgmDir = Path.Combine(packRoot, "bgm");
+            var bgmFolderName = request.Slot switch
+            {
+                0 => "bgm",
+                1 => "bgm_2nd",
+                2 => "bgm_3rd",
+                _ => "bgm"
+            };
+            var bgmDir = Path.Combine(packRoot, bgmFolderName);
             Directory.CreateDirectory(bgmDir);
             ClearDirectory(bgmDir);
 
