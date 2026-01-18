@@ -1384,6 +1384,11 @@ namespace SCDToolkit.Desktop.ViewModels
             await tcs.Task;
         }
 
+        private Task ShowErrorDialogAsync(string title, string message)
+        {
+            return ShowOkAsync(title, message);
+        }
+
         private enum QuickNormalizeMode
         {
             Full,
@@ -1709,13 +1714,18 @@ namespace SCDToolkit.Desktop.ViewModels
                     var ffmpegPath = ResolveFfmpegPath();
                     if (string.IsNullOrWhiteSpace(ffmpegPath))
                     {
-                        System.Diagnostics.Debug.WriteLine("ffmpeg.exe not found - cannot convert non-WAV files to SCD");
+                        await ShowErrorDialogAsync("FFmpeg Not Found", 
+                            "FFmpeg is required to convert non-WAV files to SCD.\n\n" +
+                            "Please ensure FFmpeg is installed and the FFMPEG_PATH environment variable is set, " +
+                            "or place ffmpeg.exe in the 'ffmpeg/bin' folder.");
                         return;
                     }
 
                     if (Path.IsPathRooted(ffmpegPath) && !System.IO.File.Exists(ffmpegPath))
                     {
-                        System.Diagnostics.Debug.WriteLine("ffmpeg.exe not found at: " + ffmpegPath);
+                        await ShowErrorDialogAsync("FFmpeg Not Found", 
+                            $"FFmpeg was not found at: {ffmpegPath}\n\n" +
+                            "Please ensure FFmpeg is installed and accessible.");
                         return;
                     }
 
@@ -1736,7 +1746,8 @@ namespace SCDToolkit.Desktop.ViewModels
                     {
                         if (process == null)
                         {
-                            System.Diagnostics.Debug.WriteLine("Failed to start ffmpeg");
+                            await ShowErrorDialogAsync("Conversion Failed", 
+                                "Failed to start FFmpeg process. Please check your FFmpeg installation.");
                             return;
                         }
 
@@ -1747,7 +1758,8 @@ namespace SCDToolkit.Desktop.ViewModels
                         
                         if (process.ExitCode != 0 || !System.IO.File.Exists(wavPath))
                         {
-                            System.Diagnostics.Debug.WriteLine("ffmpeg conversion failed: " + err);
+                            await ShowErrorDialogAsync("Conversion Failed", 
+                                $"FFmpeg failed to convert the audio file to WAV.\n\nError: {err}");
                             return;
                         }
                     }
@@ -1772,15 +1784,28 @@ namespace SCDToolkit.Desktop.ViewModels
                 var baseScd = _lastScan.FirstOrDefault(item => 
                     System.IO.Path.GetExtension(item.Path).Equals(".scd", StringComparison.OrdinalIgnoreCase));
                 
+                string templateScdPath;
                 if (baseScd == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("No SCD file found to use as template");
-                    // Clean up temp WAV if we created one
-                    if (ext != ".WAV" && System.IO.File.Exists(wavPath))
+                    // Fall back to bundled test.scd template
+                    var fallbackPath = System.IO.Path.Combine(AppContext.BaseDirectory, "test.scd");
+                    if (!System.IO.File.Exists(fallbackPath))
                     {
-                        try { System.IO.File.Delete(wavPath); } catch { }
+                        await ShowErrorDialogAsync("Template SCD Missing", 
+                            "No SCD template file was found.\n\n" +
+                            "Either add an SCD file to your library, or ensure test.scd exists in the application folder.");
+                        // Clean up temp WAV if we created one
+                        if (ext != ".WAV" && System.IO.File.Exists(wavPath))
+                        {
+                            try { System.IO.File.Delete(wavPath); } catch { }
+                        }
+                        return;
                     }
-                    return;
+                    templateScdPath = fallbackPath;
+                }
+                else
+                {
+                    templateScdPath = baseScd.Path;
                 }
 
                 var window = GetMainWindow();
@@ -1813,12 +1838,14 @@ namespace SCDToolkit.Desktop.ViewModels
                 }
                 
                 var encoder = new SCDToolkit.Core.Services.ScdEncoderService();
-                var resultPath = await encoder.EncodeAsync(baseScd.Path, wavPath, quality: 10, fullLoop: false);
+                var resultPath = await encoder.EncodeAsync(templateScdPath, wavPath, quality: 10, fullLoop: false);
 
                 // Move/copy to chosen path if encoder wrote elsewhere
                 if (!string.Equals(resultPath, outputPath, StringComparison.OrdinalIgnoreCase))
                 {
                     System.IO.File.Copy(resultPath, outputPath, overwrite: true);
+                    // Clean up the intermediate SCD file created by encoder
+                    try { System.IO.File.Delete(resultPath); } catch { }
                 }
 
                 // Clean up temp WAV if we created one
@@ -1833,6 +1860,9 @@ namespace SCDToolkit.Desktop.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error converting to SCD: {ex.Message}");
+                await ShowErrorDialogAsync("Conversion Failed", 
+                    $"An error occurred while converting to SCD:\n\n{ex.Message}\n\n" +
+                    "Please check that all required tools (oggenc.exe, adpcmencode3.exe) are present in the tools folder.");
             }
         }
 
